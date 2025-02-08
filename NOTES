@@ -1,0 +1,17 @@
+At least one cell per screen so there will be at least something to stand on. Cursor stands on cells, like in Vim, not between cells, like in Windows 7 built-in Notepad. Cursor can't go beyond cells
+
+Empty text fields should be implemented via one space character cell marked as "text" - this is to make text fields visible when they're empty and allow to enter text after the last character. Theoretically, one can use anything else instead of a space, but it will look confusing then
+
+Apart from that one space at the end of a text field, there should be no mandatory padding anywhere, e.g. a button can be in such a way that its entire text is its only clickable surface, no one-space paddings around the button text, these paddings can be added by the user if the user desires so
+
+Actions:
+* Arrow keys:
+    * Move the cursor one screen cell in the specified direction
+* Enter/return:
+    * When cursor is on button cell:
+        * Activate the button
+    * When cursor is on text cell:
+        * Insert a "new line" ("\n") text cell before the current cell
+* Any other character:
+    * When cursor is on text cell:
+        * Insert that "any other character" as text cell, before the current cell
