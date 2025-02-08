@@ -1,6 +1,6 @@
 === IMPLEMENTATION DETAILS ===
 
-Turns out I *have* to use ncurses. Crap. I thought the standard library - maybe with some POSIX extensions - will solve the problem, but frick me, I guess, have to bring in a dependency (eugh!)
+FOR MAKING THIS IN C: Turns out I *have* to use ncurses. Crap. I thought the standard library - maybe with some POSIX extensions - will solve the problem, but frick me, I guess, have to bring in a dependency (eugh!)
 
 Every character has a type: it's either static, editable or a button. Button cells should also store an arbitrary index in themselves, this is to recognize what button got pressed
 
