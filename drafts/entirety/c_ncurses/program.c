@@ -109,5 +109,7 @@ int main(void) {
     cbreak();
     echo();
 
+    wgetch(ctx.win);
+
     endwin();
 }
