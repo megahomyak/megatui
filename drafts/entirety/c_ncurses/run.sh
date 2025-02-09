@@ -1,2 +1,2 @@
 #!/bin/sh
-gcc -static program.c && ./a.out && rm a.out
+gcc program.c -lncurses && ./a.out && rm a.out
