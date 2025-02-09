@@ -1,8 +1,6 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
-#define NONNULL /* non-null */
-
 typedef enum {
     STATIC,
     BUTTON,
@@ -20,12 +18,9 @@ typedef struct Cell {
 } Cell;
 
 typedef struct {
-    WINDOW NONNULL *win;
-    Cell NONNULL *current_cell;
+    WINDOW /* non-null */ *win;
+    Cell /* non-null */ *current_cell;
 } Context;
-
-#define declare_nullable(valuetype) typedef struct { valuetype *ptr }
-#define declare_nonnull(valuetype) typedef struct { valuetype *ptr } valuetype ## _nonnull;
 
 Cell *malloc_cell(void) {
     Cell *cell = malloc(sizeof (*cell));
@@ -89,6 +84,8 @@ void redraw(Context *ctx) {
     wclear(ctx->win);
 }
 
+#define iter_str(str) for (char *c = str; *c; ++c)
+
 int main(void) {
     Cell *current_cell = malloc_cell();
     current_cell->prev = NULL;
@@ -99,6 +96,15 @@ int main(void) {
         .win = initscr(),
         .current_cell = current_cell,
     };
+    iter_str("est static text ") {
+        add_static(&ctx, *c);
+    }
+    iter_str("editable! ") {
+        add_editable(&ctx, *c);
+    }
+    iter_str("button") {
+        add_button(&ctx, *c, 1);
+    }
     nonl();
     cbreak();
     echo();
