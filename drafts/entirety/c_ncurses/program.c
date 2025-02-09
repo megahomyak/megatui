@@ -1,6 +1,8 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
+#define NONNULL /* non-null */
+
 typedef enum {
     STATIC,
     BUTTON,
@@ -18,24 +20,12 @@ typedef struct Cell {
 } Cell;
 
 typedef struct {
-    WINDOW *win;
-    Cell *current_cell;
+    WINDOW NONNULL *win;
+    Cell NONNULL *current_cell;
 } Context;
 
-void init_static(Cell *current, char content, Cell *next, Cell *prev) {
-    current->next = next;
-    current->prev = prev;
-    current->type = STATIC;
-    current->content = content;
-}
-
-void init_button(Cell *current, char content, Cell *next, Cell *prev, Index index) {
-    current->next = next;
-    current->prev = prev;
-    current->type = BUTTON;
-    current->content = content;
-    current->index = index;
-}
+#define declare_nullable(valuetype) typedef struct { valuetype *ptr }
+#define declare_nonnull(valuetype) typedef struct { valuetype *ptr } valuetype ## _nonnull;
 
 Cell *malloc_cell(void) {
     Cell *cell = malloc(sizeof (*cell));
@@ -50,13 +40,47 @@ void free_cell(Cell *cell) {
     free(cell);
 }
 
-void add_editable(Context *ctx, char content, Cell *next, Cell *prev) {
+void link_before(Cell *current, Cell *new) {
+    new->prev = current->prev;
+    new->next = current;
+    if (new->prev != NULL) {
+        new->prev->next = new;
+    }
+    current->prev = new;
+}
+
+void link_after(Cell *current, Cell *new) {
+    new->prev = current;
+    new->next = current->next;
+    if (new->next != NULL) {
+        new->next->prev = new;
+    }
+    current->prev = new;
+}
+
+void add_editable(Context *ctx, char content) {
     Cell *new_cell = malloc_cell();
-    new_cell->prev = ctx->current_cell->prev;
-    new_cell->next = ctx->current_cell;
-    new_cell->content = content;
     new_cell->type = EDITABLE;
-    ctx->current_cell->prev = new_cell;
+    new_cell->content = content;
+
+    link_before(ctx->current_cell, new_cell);
+}
+
+void add_static(Context *ctx, char content) {
+    Cell *new_cell = malloc_cell();
+    new_cell->type = STATIC;
+    new_cell->content = content;
+
+    link_after(ctx->current_cell, new_cell);
+}
+
+void add_button(Context *ctx, char content, Index index) {
+    Cell *new_cell = malloc_cell();
+    new_cell->type = BUTTON;
+    new_cell->content = content;
+    new_cell->index = index;
+
+    link_after(ctx->current_cell, new_cell);
 }
 
 void redraw(Context *ctx) {
@@ -66,8 +90,14 @@ void redraw(Context *ctx) {
 }
 
 int main(void) {
+    Cell *current_cell = malloc_cell();
+    current_cell->prev = NULL;
+    current_cell->next = NULL;
+    current_cell->type = STATIC;
+    current_cell->content = 'T';
     Context ctx = {
         .win = initscr(),
+        .current_cell = current_cell,
     };
     nonl();
     cbreak();
