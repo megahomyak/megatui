@@ -52,11 +52,6 @@ def main(stdscr):
     curses.noecho()  # Disable automatic echoing of typed characters
     curses.cbreak()  # Disable line buffering, so input is processed immediately
 
-    height, width = stdscr.getmaxyx()
-    stdscr.addstr("#" * (width + 1))
-    stdscr.getch()
-    return
-
     def redraw():
         height, width = stdscr.getmaxyx()
         line_pos = 0
