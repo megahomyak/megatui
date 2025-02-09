@@ -1,42 +1,48 @@
-from types import SimpleNamespace
 import curses
 
-"""
-Implement only the basics:
-* Sequence of letters
-* Each letetr is static, editable or button
-"""
+TEXT_ROWS = 5
+TEXT_COLS = 40
+
+text = [
+    "This is a sample block of text.",
+    "You can move the cursor around.",
+    "Use arrow keys to navigate.",
+    "Press 'q' to quit the program.",
+    "Enjoy using curses!"
+]
 
 def main(stdscr):
-    curses.use_default_colors()
-    STATIC_COLOR_PAIR = 1
-    EDITABLE_COLOR_PAIR = 2
-    BUTTON_COLOR_PAIR = 3
-    curses.init_pair(STATIC_COLOR_PAIR, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(EDITABLE_COLOR_PAIR, curses.COLOR_BLACK, curses.COLOR_YELLOW)
-    curses.init_pair(BUTTON_COLOR_PAIR, curses.COLOR_WHITE, curses.COLOR_BLUE)
+    stdscr.keypad(True)  # Enable special key input (like arrow keys)
+    curses.noecho()  # Disable automatic echoing of typed characters
+    curses.cbreak()  # Disable line buffering, so input is processed immediately
 
-    stdscr.addstr("static ", curses.color_pair(STATIC_COLOR_PAIR))
-    stdscr.addstr("editable", curses.color_pair(EDITABLE_COLOR_PAIR))
-    stdscr.addstr(" ", curses.color_pair(STATIC_COLOR_PAIR))
-    stdscr.addstr("button", curses.color_pair(BUTTON_COLOR_PAIR))
-    stdscr.addstr(" longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglong", curses.color_pair(STATIC_COLOR_PAIR))
-    y = 0
-    x = 0
-    stdscr.move(y, x)
+    x, y = 0, 0
+
+    # Display text on the screen
+    for i, line in enumerate(text):
+        stdscr.addstr(i, 0, line)  # Print each line of text at the correct row
+
+    stdscr.move(y, x)  # Move cursor to the initial position
+    stdscr.refresh()  # Refresh screen to reflect changes
+
     while True:
-        key = stdscr.getkey()
-        if key == curses.KEY_UP:
-            y -= 1
-            stdscr.move(y, x)
-        elif key == curses.KEY_DOWN:
-            y += 1
-            stdscr.move(y, x)
-        elif key == curses.KEY_RIGHT:
-            x += 1
-            stdscr.move(y, x)
-        elif key == curses.KEY_LEFT:
-            x -= 1
-            stdscr.move(y, x)
+        ch = stdscr.getch()
+        if ch == ord('q'):  # Read user input until 'q' is pressed
+            break
+        elif ch == curses.KEY_UP:
+            if y > 0:
+                y -= 1  # Move cursor up if not at the top
+        elif ch == curses.KEY_DOWN:
+            if y < TEXT_ROWS - 1:
+                y += 1  # Move cursor down if not at the bottom
+        elif ch == curses.KEY_LEFT:
+            if x > 0:
+                x -= 1  # Move cursor left if not at the beginning of the line
+        elif ch == curses.KEY_RIGHT:
+            if x < len(text[y]) - 1:
+                x += 1  # Move cursor right if not at the end of the line
+        
+        stdscr.move(y, x)  # Update cursor position
+        stdscr.refresh()  # Refresh screen to reflect changes
 
 curses.wrapper(main)
