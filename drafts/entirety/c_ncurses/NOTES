@@ -1,0 +1,12 @@
+find lines forward(terminal width, terminal height, cursor cell):
+    lines forward = 0
+    line counter = terminal width
+    for c starting at cursor cell:
+        if c == '\n' or line counter == 0:
+            lines forward++
+            if lines forward == terminal height:
+                break
+            line counter = terminal width
+        else:
+            line counter--
+    return lines forward
