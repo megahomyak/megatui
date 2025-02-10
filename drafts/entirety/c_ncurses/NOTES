@@ -1,12 +1,16 @@
-find lines forward(terminal width, terminal height, cursor cell):
+find lines forward(terminal width, terminal height, cursor cell): # Sucks since the line counter doesn't start at the beginning of a line, hence making the "== terminal height" check incorrect
     lines forward = 0
     line counter = terminal width
-    for c starting at cursor cell:
-        if c == '\n' or line counter == 0:
+    do:
+        if cursor cell.char == '\n' or line counter == 0:
             lines forward++
             if lines forward == terminal height:
                 break
             line counter = terminal width
         else:
             line counter--
+        cursor cell = cursor cell.next
+    while cursor cell is not NULL
     return lines forward
+
+find lines backward(terminal width, terminal height, cursor cell)
