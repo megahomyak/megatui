@@ -8,11 +8,11 @@ typedef struct Char {
 } Char;
 
 void display(Char* cursor, int width, int height) {
-    int current_index = 0;
+    int line_cursor_index = 0;
     {
         Char* current = cursor;
         while ((current = current->next) != NULL) {
-            current_index++;
+            line_cursor_index++;
         }
     }
 }
