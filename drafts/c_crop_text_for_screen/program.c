@@ -8,7 +8,13 @@ typedef struct Char {
 } Char;
 
 void display(Char* cursor, int width, int height) {
-
+    int current_index = 0;
+    {
+        Char* current = cursor;
+        while ((current = current->next) != NULL) {
+            current_index++;
+        }
+    }
 }
 
 void die_if_null(void* ptr) {
@@ -21,18 +27,19 @@ int main(void) {
     Char* current = malloc(sizeof(Char));
     die_if_null(current);
     current->prev = NULL;
-    current->value = 'T';
+    current->value = '1';
     current->next = NULL;
     Char* cursor = NULL;
-    for (char* c = "hello, world!\n\n\n\n\n\n\nCRAPPPPP|lalalalalalala\narstarstarstarstarsntaierthdienshtdienhrstidenhrsitden\nrotendoirsetndoiersntdoiernstodei\nrstidenroistendoiernstodeirnstoid\n\n\n\n\narst\narstarst\narstarstarst\n\n\n\n"; *c; ++c) {
-        current->next = malloc(sizeof(Char));
-        die_if_null(current->next);
-        current->next->prev = current;
-        current = current->next;
-        current->next = NULL;
-        current->value = *c;
+    for (char* c = "hello, world!\n\n\n\n\n\n\nCRAPPPPP\n|lalalalalalala\narstarstarstarstarsntaierthdienshtdienhrstidenhrsitden\nrotendoirsetndoiersntdoiernstodei\nrstidenroistendoiernstodeirnstoid\n\n\n\n\narst\narstarst\narstarstarst\n\n\n\n"; *c; ++c) {
         if (*c == '|') {
             cursor = current;
+        } else {
+            current->next = malloc(sizeof(Char));
+            die_if_null(current->next);
+            current->next->prev = current;
+            current = current->next;
+            current->next = NULL;
+            current->value = *c;
         }
     }
     die_if_null(cursor);
