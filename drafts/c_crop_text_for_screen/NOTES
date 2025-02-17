@@ -1,0 +1,76 @@
+"""
+[3:ariest\n
+abcdef ghi\n]
+[1:enaoiresnto
+bla][2:<h>def\n
+\n
+\n]
+arstarst\n
+
+"""
+
+SAVE: 1->3
+CURSOR: <>
+
+SECTIONS:
+CURRENT LINE: [current_line_beginning, <cursor>)
+AFTER: [<cursor>, <last>]
+BEFORE: [<first>, current_line_beginning)
+
+WHEN BEFORE LINE SCANNED FULLY:
+GO FORWARD UNTIL THE AMOUNT OF LINES WILL BE {??????}
+
+WHEN GOING BACKWARDS:
+prev=NULL -> break, we're done, the current one is where we start to render from
+
+WHEN GOING FORWARDS TO CORRECT IN-LINE POSITION:
+On any line passed, subtract 1 from line count (FROM "BEFORE"???). When equal (TO WHAT???), begin to render
+
+*IMPORTANT*: in the end, I will have to decrease the amount of lines rendered (when going forward after going backwards at the end to determine the rendering beginning position), BUT I'll have to display *something*, which is at least one line. Thus, I will only be able to decrease to 1 line => case of height=0 should return immediately
+
+==== DUMBING THIS DOWN TO INEFFICIENT, YET STRAIGHTFORWARD SOLUTIONS ====
+
+Let's assume I have two lists: the BEFORE one and the AFTER one. Both contain lines in relation to the current one
+
+HEIGHT=11 => LINES_TO_DISPLAY=10
+
+I need to return two lists: BEFORE (cut appropriately), AFTER (cut appropriately)
+
+5 before, 2 after, height=3:
+====
+####
+====
+
+5 before, 1 after, height=3:
+====
+####
+====
+
+5 before, 0 after, height=3:
+====
+====
+####
+
+0 before, 5 after, height=3:
+####
+====
+====
+
+We need to know whether to bound to the lower part or the upper part, or keep them the same. Essentially, the lesser part is "special", we should consider it first
+
+One possible solution with a loop: increase both bounds until the total amount is 0
+
+LINES_TO_DISPLAY=10
+forever:
+    if LINES_TO_DISPLAY == 0: break
+    if before != 0:
+        before -= 1
+        LINES_TO_DISPLAY -= 1
+    if LINES_TO_DISPLAY == 0: break
+    if after != 0:
+        after -= 1
+        LINES_TO_DISPLAY -= 1
+
+then, go "before" lines before, and start rendering
+
+good plan

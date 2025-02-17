@@ -32,18 +32,22 @@ void display(Char* cursor, uint width, uint height) {
 
     // get the amt of lines after
     uint lines_after = 0;
-    do {
-        if (cursor->value == '\n') {
+    for (;;) {
+        if (cursor->value == '\n' || screen_line_cursor_index == width) {
+            screen_line_cursor_index = 0;
             ++lines_after;
             if (lines_before + lines_after + 1 >= height) {
                 break;
             }
         }
         cursor = cursor->next;
-    } while (cursor != NULL);
+        if (cursor == NULL) break;
+        ++screen_line_cursor_index;
+    }
 
     // get how many lines should go before
-    // TODO: DO NOT TOUCH THE FUCKING "CURSOR_LINE"'s NAMING!!!! IT'S LIKE THAT FOR A REASON! IF BEFORE THE CURSOR LINE THERE'S NOTHING, WHAT'S THE CHARACTER GONNA BE? NULL? SO IT'S NOT "BEFORE_CURSOR_LINE"!!!!
+    // DO NOT TOUCH THE FUCKING "CURSOR_LINE"'s NAMING!!!! IT'S LIKE THAT FOR A REASON! IF BEFORE THE CURSOR LINE THERE'S NOTHING, WHAT'S THE CHARACTER GONNA BE? NULL? SO IT'S NOT "BEFORE_CURSOR_LINE"!!!!
+    screen_line_cursor_index = 0;
 }
 
 void die_if_null(void* ptr) {
