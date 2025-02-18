@@ -27,6 +27,22 @@ void display(Char* cursor, uint width, uint height) {
             current_char_in_soft_line_index = 0;
         }
     } // should be enough since I'm working with \n<this>\n
+    /*
+     *
+     * Algo from notes:
+     * let result1 = Getting first line ("scan_back");
+    let result2 = result1;
+    Getting forward lines (single loop);
+    loop {
+    if (is too far back) { // have > needed
+    loop forward to needed line;
+    } else if (just right) { // have == needed
+    return result;
+    } else { // not enough lines back; have < needed
+    result2 = Loop a line back ("scan_back"); <- however, if null encountered, then just immediately return result (or satisfy the "just right" condition to return on next loop iter)
+    }
+    }
+    */
 }
 
 void die_if_null(void* ptr) {
