@@ -9,7 +9,13 @@ typedef struct Char {
 
 typedef unsigned int uint;
 
-void display(Char* cursor, uint width, uint height) {
+typedef struct {
+    Char* root;
+    uint cursor_x;
+    uint cursor_y;
+} RenderParams;
+
+void make_render_params(Char* cursor, uint width, uint height) {
     if (width == 0 || height == 0) return;
     Char* cursor_line = cursor;
     uint cursor_in_hard_line_index = 0;
