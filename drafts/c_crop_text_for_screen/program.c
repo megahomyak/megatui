@@ -35,13 +35,26 @@ void display(Char* cursor, uint width, uint height) {
     Getting forward lines (single loop);
     loop {
     if (is too far back) { // have > needed
-    loop forward to needed line;
+    loop forward to needed line and do nothing else
     } else if (just right || current->prev == NULL) { // have == needed
-    return result;
+    return result
     } else { // not enough lines back; have < needed
-    result2 = Loop a line back ("scan_back");
+    result2 = Loop a line back ("scan_back")
     }
     }
+
+    Actually, it's a little different: the cursor stands in the middle of the line, while other invocations of `scan_back` will immediately stumble upon an "\n" which will be just the end of the preceding line. I should just probably just go past "\n" when scanning back. But what to do with NULL though? I should probably make two separate algorithms, but in my plans I imagine them as one because they are very similar
+
+    Ya, actually: take the cursor onto "\n", or if there's NULL - don't take: I am checking for "prev=NULL" already, that's the return condition, so it should be fine to stop at "\n" OR before "NULL"
+
+    result:
+    * Cursor pointer
+    * Cursor on-screen position index
+
+    Task: getting on-screen cursor position index.
+    Solution:
+    * Remember that in-soft-line offset from the first `scan_back`, that's our `x`
+    * Get the count of lines before, that's our `y`
     */
 }
 
