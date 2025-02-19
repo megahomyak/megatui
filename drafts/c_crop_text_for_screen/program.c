@@ -36,10 +36,10 @@ void display(Char* cursor, uint width, uint height) {
     loop {
     if (is too far back) { // have > needed
     loop forward to needed line;
-    } else if (just right) { // have == needed
+    } else if (just right || current->prev == NULL) { // have == needed
     return result;
     } else { // not enough lines back; have < needed
-    result2 = Loop a line back ("scan_back"); <- however, if null encountered, then just immediately return result (or satisfy the "just right" condition to return on next loop iter)
+    result2 = Loop a line back ("scan_back");
     }
     }
     */
