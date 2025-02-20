@@ -11,12 +11,12 @@ typedef unsigned int uint;
 
 uint _scan_back(Char** cursor, uint* soft_lines_before, uint width) {
     uint cursor_hard_index = 0;
-    while ((**cursor).prev != NULL && (**cursor).value != '\n') {
+    while ((**cursor).prev != NULL && (**cursor).prev->value != '\n') {
         *cursor = (**cursor).prev;
         ++cursor_hard_index;
     }
-    *soft_lines_before += cursor_hard_index % width;
-    return cursor_hard_index / width;
+    *soft_lines_before += cursor_hard_index / width;
+    return cursor_hard_index % width;
 }
 
 uint _min(uint a, uint b) {
@@ -86,12 +86,12 @@ void render(Char* cursor, uint width, uint height) {
     Char* after = cursor;
     uint soft_lines_before = 0;
     uint cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
-    printf("b %c\n", cursor->value);
+    printf("b %c %d %d\n", cursor->value, cursor_soft_line_index, soft_lines_before);
     // Going forward:
     uint soft_lines_after = _scan_forward(cursor_soft_line_index, &after, height - 1, width, height);
     printf("f %c\n", cursor->value);
     uint min_soft_lines_after = _min(soft_lines_after, height/2);
-    printf("_ %d", min_soft_lines_after);
+    printf("_ %d\n", min_soft_lines_after);
     uint max_soft_lines_before = height - 1 - min_soft_lines_after;
     // Going back again:
     for (;;) {
@@ -100,6 +100,7 @@ void render(Char* cursor, uint width, uint height) {
         } else if (max_soft_lines_before > soft_lines_before) { // Not enough lines
             cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
             printf("b %c\n", cursor->value);
+            return;
         } else { // More than enough lines
             soft_lines_before -= _scan_forward(cursor_soft_line_index, &cursor, soft_lines_before - max_soft_lines_before, width, height);
             printf("f %c\n", cursor->value);
@@ -158,7 +159,7 @@ int main(void) {
     current->value = '1';
     current->next = NULL;
     Char* cursor = NULL;
-    for (char* c = "hello, world!\n\n\n\n\n\n\nCRAPPPPP\n12341234123412|lalalalalalala\narstarstarstarstarsntaierthdienshtdienhrstidenhrsitden\nrotendoirsetndoiersntdoiernstodei\nrstidenroistendoiernstodeirnstoid\n\n\n\n\narst\narstarst\narstarstarst\n\n\n\n"; *c; ++c) {
+    for (char* c = "hello, world!\n\n\n\n\n\n\nCRAPPPPP\n1234567890abcdef|lalalalalalala\narstarstarstarstarsntaierthdienshtdienhrstidenhrsitden\nrotendoirsetndoiersntdoiernstodei\nrstidenroistendoiernstodeirnstoid\n\n\n\n\narst\narstarst\narstarstarst\n\n\n\n"; *c; ++c) {
         if (*c == '|') {
             cursor = current;
         } else {
