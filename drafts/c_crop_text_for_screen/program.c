@@ -11,21 +11,23 @@ typedef unsigned int uint;
 
 uint scan_back(Char** cursor) {
     uint cursor_hard_index = 0;
-    while ((**cursor).prev != NULL) {
+    while ((**cursor).prev != NULL && (**cursor).value != '\n') {
         *cursor = (**cursor).prev;
-        if ((**cursor).value == '\n') {
-            break;
-        }
         ++cursor_hard_index;
     }
     return cursor_hard_index;
 }
 
+uint min(uint a, uint b) {
+    return a > b ? b : a;
+}
+
 void render(Char* cursor, uint width, uint height) {
     if (width == 0 || height == 0) return;
+    // Going in the current line:
     Char* after = cursor;
     uint cursor_hard_index = scan_back(&cursor);
-    uint lines_before = cursor_hard_index % width;
+    uint lines_before = cursor_hard_index / width;
     uint cursor_soft_line_index = cursor_hard_index % width;
     // Going forward:
     uint lines_after = 0;
@@ -39,8 +41,23 @@ void render(Char* cursor, uint width, uint height) {
                 ++lines_after;
                 soft_line_index = 0;
             }
+            if (after->next == NULL) {
+                break;
+            }
             after = after->next;
         } while (after->next);
+    }
+    uint min_lines_after = min(lines_after, height/2);
+    uint max_lines_before = height - 1 - min_lines_after;
+    // Going back again:
+    for (;;) {
+        if (max_lines_before == lines_before || cursor->prev == NULL) { // Exactly right or best available
+
+        } else if (max_lines_before > lines_before) { // Not enough lines
+
+        } else { // More than enough lines
+
+        }
     }
  // should be enough since I'm working with \n<this>\n
     /*
@@ -77,6 +94,8 @@ void render(Char* cursor, uint width, uint height) {
     * EXISTS<-\n # end of line; needs +1 for correctness
     * MISSING<-a # end of line correct
     * MISSING<-\n # either needs +1 or doesn't (if the \n is from the current attempt or from the previous one)
+    HOW TO FIX:
+    since we're only doing `scan_back` if prev!=NULL, we can just safely do a "-1" before `scan_back`
     */
 }
 
@@ -106,5 +125,5 @@ int main(void) {
         }
     }
     die_if_null(cursor);
-    display(cursor, 4, 4);
+    render(cursor, 4, 4);
 }
