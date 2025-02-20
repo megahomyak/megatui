@@ -15,7 +15,19 @@ typedef struct {
     uint cursor_y;
 } RenderParams;
 
-void make_render_params(Char* cursor, uint width, uint height) {
+uint scan_back(Char** cursor) {
+    uint cursor_hard_index = 0;
+    while ((**cursor).prev != NULL) {
+        *cursor = (**cursor).prev;
+        if ((**cursor).value == '\n') {
+            break;
+        }
+        ++cursor_hard_index;
+    }
+    return cursor_hard_index;
+}
+
+RenderParams make_render_params(Char* cursor, uint width_nonzero, uint height_nonzero) {
     if (width == 0 || height == 0) return;
     Char* cursor_line = cursor;
     uint cursor_in_hard_line_index = 0;
