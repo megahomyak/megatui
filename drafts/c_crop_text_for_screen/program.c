@@ -9,12 +9,6 @@ typedef struct Char {
 
 typedef unsigned int uint;
 
-typedef struct {
-    Char* root;
-    uint cursor_x;
-    uint cursor_y;
-} RenderParams;
-
 uint scan_back(Char** cursor) {
     uint cursor_hard_index = 0;
     while ((**cursor).prev != NULL) {
@@ -27,24 +21,28 @@ uint scan_back(Char** cursor) {
     return cursor_hard_index;
 }
 
-RenderParams make_render_params(Char* cursor, uint width_nonzero, uint height_nonzero) {
+void render(Char* cursor, uint width, uint height) {
     if (width == 0 || height == 0) return;
-    Char* cursor_line = cursor;
-    uint cursor_in_hard_line_index = 0;
-    while (cursor_line->prev != NULL && cursor_line->prev->value != '\n') {
-        cursor_in_hard_line_index++;
-        cursor_line = cursor_line->prev;
+    Char* after = cursor;
+    uint cursor_hard_index = scan_back(&cursor);
+    uint lines_before = cursor_hard_index % width;
+    uint cursor_soft_line_index = cursor_hard_index % width;
+    // Going forward:
+    uint lines_after = 0;
+    {
+        uint soft_line_index = cursor_hard_index;
+        do {
+            if (lines_after == height - 1) {
+                break;
+            }
+            if (after->value == '\n' || soft_line_index == width - 1) {
+                ++lines_after;
+                soft_line_index = 0;
+            }
+            after = after->next;
+        } while (after->next);
     }
-    uint cursor_in_soft_line_index = cursor_in_hard_line_index % width;
-    uint count_of_lines_before_cursor_soft_line = cursor_in_hard_line_index / width;
-    uint current_char_in_soft_line_index = 0;
-    while (count_of_lines_before_cursor_soft_line != 0) {
-        current_char_in_soft_line_index++;
-        if (current_char_in_soft_line_index == width) {
-            count_of_lines_before_cursor_soft_line--;
-            current_char_in_soft_line_index = 0;
-        }
-    } // should be enough since I'm working with \n<this>\n
+ // should be enough since I'm working with \n<this>\n
     /*
      *
      * Algo from notes:
@@ -73,6 +71,12 @@ RenderParams make_render_params(Char* cursor, uint width_nonzero, uint height_no
     Solution:
     * Remember that in-soft-line offset from the first `scan_back`, that's our `x`
     * Get the count of lines before, that's our `y`
+
+    `scan_back` loop, position recovery:
+    * EXISTS<-a # break can't happen
+    * EXISTS<-\n # end of line; needs +1 for correctness
+    * MISSING<-a # end of line correct
+    * MISSING<-\n # either needs +1 or doesn't (if the \n is from the current attempt or from the previous one)
     */
 }
 
