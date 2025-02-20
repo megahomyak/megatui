@@ -9,7 +9,7 @@ typedef struct Char {
 
 typedef unsigned int uint;
 
-uint scan_back(Char** cursor) {
+uint _scan_back(Char** cursor) {
     uint cursor_hard_index = 0;
     while ((**cursor).prev != NULL && (**cursor).value != '\n') {
         *cursor = (**cursor).prev;
@@ -18,36 +18,39 @@ uint scan_back(Char** cursor) {
     return cursor_hard_index;
 }
 
-uint min(uint a, uint b) {
+uint _min(uint a, uint b) {
     return a > b ? b : a;
+}
+
+uint _scan_forward(uint cursor_hard_line_index, Char** cursor, uint max_lines_after, uint width, uint height) {
+    uint lines_after = 0;
+    uint soft_line_index = cursor_hard_line_index;
+    do {
+        if (lines_after == max_lines_after) {
+            break;
+        }
+        if ((**cursor).value == '\n' || soft_line_index == width - 1) {
+            ++lines_after;
+            soft_line_index = 0;
+        }
+        if ((**cursor).next == NULL) {
+            break;
+        }
+        *cursor = (**cursor).next;
+    } while ((**cursor).next);
+    return lines_after;
 }
 
 void render(Char* cursor, uint width, uint height) {
     if (width == 0 || height == 0) return;
     // Going in the current line:
     Char* after = cursor;
-    uint cursor_hard_index = scan_back(&cursor);
-    uint lines_before = cursor_hard_index / width;
-    uint cursor_soft_line_index = cursor_hard_index % width;
+    uint cursor_hard_line_index = _scan_back(&cursor);
+    uint lines_before = cursor_hard_line_index / width;
+    uint cursor_soft_line_index = cursor_hard_line_index % width;
     // Going forward:
-    uint lines_after = 0;
-    {
-        uint soft_line_index = cursor_hard_index;
-        do {
-            if (lines_after == height - 1) {
-                break;
-            }
-            if (after->value == '\n' || soft_line_index == width - 1) {
-                ++lines_after;
-                soft_line_index = 0;
-            }
-            if (after->next == NULL) {
-                break;
-            }
-            after = after->next;
-        } while (after->next);
-    }
-    uint min_lines_after = min(lines_after, height/2);
+    uint lines_after = _scan_forward(cursor_hard_line_index, &after, height - 1, width, height);
+    uint min_lines_after = _min(lines_after, height/2);
     uint max_lines_before = height - 1 - min_lines_after;
     // Going back again:
     for (;;) {
