@@ -160,7 +160,7 @@ int main(void) {
     current->value = '1';
     current->next = NULL;
     Char* cursor = NULL;
-    for (char* c = "hello, world!\n\n\n\n\n\n\nCRAPPPPP\n1234567890abcdef|lalalalalalala\narstarstarstarstarsntaierthdienshtdienhrstidenhrsitden\nrotendoirsetndoiersntdoiernstodei\nrstidenroistendoiernstodeirnstoid\n\n\n\n\narst\narstarst\narstarstarst\n\n\n\n"; *c; ++c) {
+    for (char* c = "hello, world!\n\n\n\n\n\n\nCRAPPPP\n1234567890abcdef|lalalalalalala\narstarstarstarstarsntaierthdienshtdienhrstidenhrsitden\nrotendoirsetndoiersntdoiernstodei\nrstidenroistendoiernstodeirnstoid\n\n\n\n\narst\narstarst\narstarstarst\n\n\n\n"; *c; ++c) {
         if (*c == '|') {
             cursor = current;
         } else {
