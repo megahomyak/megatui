@@ -42,6 +42,25 @@ uint _scan_forward(uint cursor_soft_line_index, Char** cursor, uint max_lines_af
     return soft_lines_after;
 }
 
+void _render_immediately_DEBUG(Char* cursor, uint width, uint height) {
+    uint cursor_soft_line_index = 0;
+    uint soft_lines = 0;
+    do {
+        if (cursor->value == '\n' || cursor_soft_line_index == width) {
+            printf("\n");
+            ++soft_lines;
+            if (soft_lines == height) {
+                return;
+            }
+            cursor_soft_line_index = 0;
+        } else {
+            printf("%c", cursor->value);
+            ++cursor_soft_line_index;
+        }
+        cursor = cursor->next;
+    } while (cursor);
+}
+
 void _render_immediately(Char* cursor, uint width, uint height) {
     uint cursor_soft_line_index = 0;
     uint soft_lines = 0;
@@ -75,7 +94,7 @@ void render(Char* cursor, uint width, uint height) {
     // Going back again:
     for (;;) {
         if (max_soft_lines_before == soft_lines_before || cursor->prev == NULL) { // Exactly right or best available
-            return _render_immediately(cursor, width, height);
+            return _render_immediately_DEBUG(cursor, width, height);
         } else if (max_soft_lines_before > soft_lines_before) { // Not enough lines
             cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
             printf("b %c\n", cursor->value);
