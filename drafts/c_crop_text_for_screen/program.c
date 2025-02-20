@@ -9,6 +9,13 @@ typedef struct Char {
 
 typedef unsigned int uint;
 
+#define DEBUG
+#ifdef DEBUG
+#define debug_printf(...) printf(__VA_ARGS__)
+#else
+#define debug_printf(...)
+#endif
+
 uint _scan_back(Char** cursor, uint* soft_lines_before, uint width) {
     uint cursor_hard_index = 0;
     while ((**cursor).prev != NULL && (**cursor).prev->value != '\n') {
@@ -43,26 +50,6 @@ uint _scan_forward(uint cursor_soft_line_index, Char** cursor, uint max_lines_af
     return soft_lines_after;
 }
 
-void _render_immediately_DEBUG(Char* cursor, uint width, uint height) {
-    uint cursor_soft_line_index = 0;
-    uint soft_lines = 1;
-    do {
-        printf("%c", cursor->value);
-        ++cursor_soft_line_index;
-        if (cursor->value == '\n' || cursor_soft_line_index == width) {
-            if (cursor->value != '\n') {
-                printf("+\n");
-            }
-            if (soft_lines == height) {
-                return;
-            }
-            ++soft_lines;
-            cursor_soft_line_index = 0;
-        }
-        cursor = cursor->next;
-    } while (cursor);
-}
-
 void _render_immediately(Char* cursor, uint width, uint height) {
     uint cursor_soft_line_index = 0;
     uint soft_lines = 1;
@@ -70,6 +57,9 @@ void _render_immediately(Char* cursor, uint width, uint height) {
         printf("%c", cursor->value);
         ++cursor_soft_line_index;
         if (cursor->value == '\n' || cursor_soft_line_index == width) {
+            if (cursor->value != '\n') {
+                debug_printf("+\n");
+            }
             if (soft_lines == height) {
                 return;
             }
@@ -86,25 +76,25 @@ void render(Char* cursor, uint width, uint height) {
     Char* after = cursor;
     uint soft_lines_before = 0;
     uint cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
-    printf("b %c %d %d\n", cursor->value, cursor_soft_line_index, soft_lines_before);
+    debug_printf("b %c %d %d\n", cursor->value, cursor_soft_line_index, soft_lines_before);
     // Going forward:
     uint soft_lines_after = _scan_forward(cursor_soft_line_index, &after, height - 1, width, height);
-    printf("f %c\n", cursor->value);
+    debug_printf("f %c\n", cursor->value);
     uint min_soft_lines_after = _min(soft_lines_after, height/2);
-    printf("_ %d\n", min_soft_lines_after);
+    debug_printf("_ %d\n", min_soft_lines_after);
     uint max_soft_lines_before = height - 1 - min_soft_lines_after;
     // Going back again:
     for (;;) {
         if (max_soft_lines_before == soft_lines_before || cursor->prev == NULL) { // Exactly right or best available
-            return _render_immediately_DEBUG(cursor, width, height);
+            return _render_immediately(cursor, width, height);
         } else if (max_soft_lines_before > soft_lines_before) { // Not enough lines
-            printf("bb %c %d %d %d\n", cursor->value, 0, max_soft_lines_before, soft_lines_before);
+            debug_printf("bb %c %d %d %d\n", cursor->value, 0, max_soft_lines_before, soft_lines_before);
             cursor = cursor->prev;
             _scan_back(&cursor, &soft_lines_before, width);
-            printf("bb %c %d\n", cursor->value, soft_lines_before);
+            debug_printf("bb %c %d\n", cursor->value, soft_lines_before);
         } else { // More than enough lines
             soft_lines_before -= _scan_forward(0, &cursor, soft_lines_before - max_soft_lines_before, width, height);
-            printf("f %c\n", cursor->value);
+            debug_printf("f %c\n", cursor->value);
         }
     }
  // should be enough since I'm working with \n<this>\n
