@@ -45,18 +45,19 @@ uint _scan_forward(uint cursor_soft_line_index, Char** cursor, uint max_lines_af
 
 void _render_immediately_DEBUG(Char* cursor, uint width, uint height) {
     uint cursor_soft_line_index = 0;
-    uint soft_lines = 0;
+    uint soft_lines = 1;
     do {
+        printf("%c", cursor->value);
+        ++cursor_soft_line_index;
         if (cursor->value == '\n' || cursor_soft_line_index == width) {
-            printf("\n");
-            ++soft_lines;
+            if (cursor->value != '\n') {
+                printf("\n");
+            }
             if (soft_lines == height) {
                 return;
             }
+            ++soft_lines;
             cursor_soft_line_index = 0;
-        } else {
-            printf("%c", cursor->value);
-            ++cursor_soft_line_index;
         }
         cursor = cursor->next;
     } while (cursor);
@@ -64,17 +65,16 @@ void _render_immediately_DEBUG(Char* cursor, uint width, uint height) {
 
 void _render_immediately(Char* cursor, uint width, uint height) {
     uint cursor_soft_line_index = 0;
-    uint soft_lines = 0;
+    uint soft_lines = 1;
     do {
         printf("%c", cursor->value);
+        ++cursor_soft_line_index;
         if (cursor->value == '\n' || cursor_soft_line_index == width) {
-            ++soft_lines;
             if (soft_lines == height) {
                 return;
             }
+            ++soft_lines;
             cursor_soft_line_index = 0;
-        } else {
-            ++cursor_soft_line_index;
         }
         cursor = cursor->next;
     } while (cursor);
@@ -102,7 +102,6 @@ void render(Char* cursor, uint width, uint height) {
             cursor = cursor->prev;
             cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
             printf("bb %c %d %d\n", cursor->value, cursor_soft_line_index, soft_lines_before);
-            return;
         } else { // More than enough lines
             soft_lines_before -= _scan_forward(cursor_soft_line_index, &cursor, soft_lines_before - max_soft_lines_before, width, height);
             printf("f %c\n", cursor->value);
