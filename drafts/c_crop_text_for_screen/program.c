@@ -9,29 +9,29 @@ typedef struct Char {
 
 typedef unsigned int uint;
 
-uint _scan_back(Char** cursor) {
+uint _scan_back(Char** cursor, uint* lines_before, uint width) {
     uint cursor_hard_index = 0;
     while ((**cursor).prev != NULL && (**cursor).value != '\n') {
         *cursor = (**cursor).prev;
         ++cursor_hard_index;
     }
-    return cursor_hard_index;
+    *lines_before += cursor_hard_index % width;
+    return cursor_hard_index / width;
 }
 
 uint _min(uint a, uint b) {
     return a > b ? b : a;
 }
 
-uint _scan_forward(uint cursor_hard_line_index, Char** cursor, uint max_lines_after, uint width, uint height) {
+uint _scan_forward(uint cursor_soft_line_index, Char** cursor, uint max_lines_after, uint width, uint height) {
     uint lines_after = 0;
-    uint soft_line_index = cursor_hard_line_index;
     do {
         if (lines_after == max_lines_after) {
             break;
         }
-        if ((**cursor).value == '\n' || soft_line_index == width - 1) {
+        if ((**cursor).value == '\n' || cursor_soft_line_index == width - 1) {
             ++lines_after;
-            soft_line_index = 0;
+            cursor_soft_line_index = 0;
         }
         if ((**cursor).next == NULL) {
             break;
@@ -45,11 +45,10 @@ void render(Char* cursor, uint width, uint height) {
     if (width == 0 || height == 0) return;
     // Going in the current line:
     Char* after = cursor;
-    uint cursor_hard_line_index = _scan_back(&cursor);
-    uint lines_before = cursor_hard_line_index / width;
-    uint cursor_soft_line_index = cursor_hard_line_index % width;
+    uint lines_before = 0;
+    uint cursor_soft_line_index = _scan_back(&cursor, &lines_before, width);
     // Going forward:
-    uint lines_after = _scan_forward(cursor_hard_line_index, &after, height - 1, width, height);
+    uint lines_after = _scan_forward(cursor_soft_line_index, &after, height - 1, width, height);
     uint min_lines_after = _min(lines_after, height/2);
     uint max_lines_before = height - 1 - min_lines_after;
     // Going back again:
