@@ -98,8 +98,10 @@ void render(Char* cursor, uint width, uint height) {
         if (max_soft_lines_before == soft_lines_before || cursor->prev == NULL) { // Exactly right or best available
             return _render_immediately_DEBUG(cursor, width, height);
         } else if (max_soft_lines_before > soft_lines_before) { // Not enough lines
+            printf("bb %c %d %d %d\n", cursor->value, cursor_soft_line_index, max_soft_lines_before, soft_lines_before);
+            cursor = cursor->prev;
             cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
-            printf("b %c\n", cursor->value);
+            printf("bb %c %d %d\n", cursor->value, cursor_soft_line_index, soft_lines_before);
             return;
         } else { // More than enough lines
             soft_lines_before -= _scan_forward(cursor_soft_line_index, &cursor, soft_lines_before - max_soft_lines_before, width, height);
