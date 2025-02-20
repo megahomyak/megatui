@@ -65,19 +65,24 @@ void render(Char* cursor, uint width, uint height) {
     Char* after = cursor;
     uint soft_lines_before = 0;
     uint cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
+    printf("b %c\n", cursor->value);
     // Going forward:
     uint soft_lines_after = _scan_forward(cursor_soft_line_index, &after, height - 1, width, height);
+    printf("f %c\n", cursor->value);
     uint min_soft_lines_after = _min(soft_lines_after, height/2);
+    printf("_ %d", min_soft_lines_after);
     uint max_soft_lines_before = height - 1 - min_soft_lines_after;
     // Going back again:
     for (;;) {
         if (max_soft_lines_before == soft_lines_before || cursor->prev == NULL) { // Exactly right or best available
-            _render_immediately(cursor, width, height);
-            return;
+            return _render_immediately(cursor, width, height);
         } else if (max_soft_lines_before > soft_lines_before) { // Not enough lines
             cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
+            printf("b %c\n", cursor->value);
         } else { // More than enough lines
+            printf("c %d %d\n", max_soft_lines_before, soft_lines_before);
             soft_lines_before -= _scan_forward(cursor_soft_line_index, &cursor, max_soft_lines_before, width, height);
+            printf("f %c\n", cursor->value);
         }
     }
  // should be enough since I'm working with \n<this>\n
@@ -146,5 +151,5 @@ int main(void) {
         }
     }
     die_if_null(cursor);
-    render(cursor, 4, 4);
+    render(cursor, 8, 6);
 }
