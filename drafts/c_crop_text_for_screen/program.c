@@ -9,6 +9,16 @@ typedef struct Char {
 
 typedef unsigned int uint;
 
+uint go_back_in_line(Char** cursor, uint* back_soft_lines_count);
+uint go_forward(Char** cursor, uint cursor_soft_line, uint max_soft_lines_count);
+
+/*
+ * backwards in line (unconditional)
+ * forward to last possible visible line (unconditional)
+ * cycling backwards (while)
+ * going forwards (just one "if")
+ */
+
 #define DEBUG
 #ifdef DEBUG
 #define debug_printf(...) printf(__VA_ARGS__)
