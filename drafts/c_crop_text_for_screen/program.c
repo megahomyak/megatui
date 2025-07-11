@@ -1,177 +1,133 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* Some helpful macros here, just help readability for unholdable restrictions. Better than doc comments, IMO. */
+#define meaning(meaning)
+#define assuming(assumption)
+
+typedef unsigned int index;
+
 typedef struct Char {
-    struct Char* prev;
-    char value;
-    struct Char* next;
+    struct Char* prev assuming(back != NULL);
+    char content;
+    struct Char* next assuming(forward != NULL);
 } Char;
 
-typedef unsigned int uint;
-
-uint go_back_in_line(Char** cursor, uint* back_soft_lines_count);
-uint go_forward(Char** cursor, uint cursor_soft_line, uint max_soft_lines_count);
-
-/*
- * backwards in line (unconditional)
- * forward to last possible visible line (unconditional)
- * cycling backwards (while)
- * going forwards (just one "if")
- */
-
-#define DEBUG
-#ifdef DEBUG
-#define debug_printf(...) printf(__VA_ARGS__)
-#else
-#define debug_printf(...)
-#endif
-
-uint _scan_back(Char** cursor, uint* soft_lines_before, uint width) {
-    uint cursor_hard_index = 0;
-    while ((**cursor).prev != NULL && (**cursor).prev->value != '\n') {
-        *cursor = (**cursor).prev;
-        ++cursor_hard_index;
-    }
-    *soft_lines_before += cursor_hard_index / width;
-    return cursor_hard_index % width;
-}
-
-uint _min(uint a, uint b) {
-    return a > b ? b : a;
-}
-
-uint _scan_forward(uint cursor_soft_line_index, Char** cursor, uint max_lines_after, uint width, uint height) {
-    uint soft_lines_after = 0;
-    do {
-        if (soft_lines_after == max_lines_after) {
-            break;
-        }
-        if ((**cursor).value == '\n' || cursor_soft_line_index == width) {
-            ++soft_lines_after;
-            cursor_soft_line_index = 0;
-        } else {
-            ++cursor_soft_line_index;
-        }
-        if ((**cursor).next == NULL) {
-            break;
-        }
-        *cursor = (**cursor).next;
-    } while ((**cursor).next);
-    return soft_lines_after;
-}
-
-void _render_immediately(Char* cursor, uint width, uint height) {
-    uint cursor_soft_line_index = 0;
-    uint soft_lines = 1;
-    do {
-        printf("%c", cursor->value);
-        ++cursor_soft_line_index;
-        if (cursor->value == '\n' || cursor_soft_line_index == width) {
-            if (cursor->value != '\n') {
-                debug_printf("+\n");
-            }
-            if (soft_lines == height) {
-                return;
-            }
-            ++soft_lines;
-            cursor_soft_line_index = 0;
-        }
-        cursor = cursor->next;
-    } while (cursor);
-}
-
-void render(Char* cursor, uint width, uint height) {
-    if (width == 0 || height == 0) return;
-    // Going in the current line:
-    Char* after = cursor;
-    uint soft_lines_before = 0;
-    uint cursor_soft_line_index = _scan_back(&cursor, &soft_lines_before, width);
-    debug_printf("b %c %d %d\n", cursor->value, cursor_soft_line_index, soft_lines_before);
-    // Going forward:
-    uint soft_lines_after = _scan_forward(cursor_soft_line_index, &after, height - 1, width, height);
-    debug_printf("f %c\n", cursor->value);
-    uint min_soft_lines_after = _min(soft_lines_after, height/2);
-    debug_printf("_ %d\n", min_soft_lines_after);
-    uint max_soft_lines_before = height - 1 - min_soft_lines_after;
-    // Going back again:
-    for (;;) {
-        if (max_soft_lines_before == soft_lines_before || cursor->prev == NULL) { // Exactly right or best available
-            return _render_immediately(cursor, width, height);
-        } else if (max_soft_lines_before > soft_lines_before) { // Not enough lines
-            debug_printf("bb %c %d %d %d\n", cursor->value, 0, max_soft_lines_before, soft_lines_before);
-            cursor = cursor->prev;
-            _scan_back(&cursor, &soft_lines_before, width);
-            debug_printf("bb %c %d\n", cursor->value, soft_lines_before);
-        } else { // More than enough lines
-            soft_lines_before -= _scan_forward(0, &cursor, soft_lines_before - max_soft_lines_before, width, height);
-            debug_printf("f %c\n", cursor->value);
-        }
-    }
- // should be enough since I'm working with \n<this>\n
-    /*
-     *
-     * Algo from notes:
-     * let result1 = Getting first line ("scan_back");
-    let result2 = result1;
-    Getting forward lines (single loop);
-    loop {
-    if (is too far back) { // have > needed
-    loop forward to needed line and do nothing else
-    } else if (just right || current->prev == NULL) { // have == needed
-    return result
-    } else { // not enough lines back; have < needed
-    result2 = Loop a line back ("scan_back")
-    }
-    }
-
-    Actually, it's a little different: the cursor stands in the middle of the line, while other invocations of `scan_back` will immediately stumble upon an "\n" which will be just the end of the preceding line. I should just probably just go past "\n" when scanning back. But what to do with NULL though? I should probably make two separate algorithms, but in my plans I imagine them as one because they are very similar
-
-    Ya, actually: take the cursor onto "\n", or if there's NULL - don't take: I am checking for "prev=NULL" already, that's the return condition, so it should be fine to stop at "\n" OR before "NULL"
-
-    result:
-    * Cursor pointer
-    * Cursor on-screen position index
-
-    Task: getting on-screen cursor position index.
-    Solution:
-    * Remember that in-soft-line offset from the first `scan_back`, that's our `x`
-    * Get the count of lines before, that's our `y`
-
-    `scan_back` loop, position recovery:
-    * EXISTS<-a # break can't happen
-    * EXISTS<-\n # end of line; needs +1 for correctness
-    * MISSING<-a # end of line correct
-    * MISSING<-\n # either needs +1 or doesn't (if the \n is from the current attempt or from the previous one)
-    HOW TO FIX:
-    since we're only doing `scan_back` if prev!=NULL, we can just safely do a "-1" before `scan_back`
-    */
-}
-
-void die_if_null(void* ptr) {
+void* die_if_null(void* ptr) {
     if (ptr == NULL) {
         exit(1);
+    }
+    return ptr;
+}
+
+Char* meaning(first_character) assuming(first_character != NULL) str_to_Char(char* str assuming(str != NULL)) {
+    if (str[0] == '\0') {
+        fprintf(stderr, "Empty str in str_to_Char\n");
+        exit(1);
+    }
+    Char* current = die_if_null(malloc(sizeof(Char)));
+    current->prev = NULL;
+    current->content = str[0];
+    current->next = NULL;
+    Char* first = current;
+    for (; *str != '\0'; ++str) {
+        Char* new = die_if_null(malloc(sizeof(Char)));
+        new->prev = current;
+        new->content = *str;
+        new->next = current->next;
+        current->next = new;
+        current = new;
+    }
+    return first;
+}
+
+index meaning(initial_width_index) find_line_beginning(Char** current assuming(current != NULL && *current != NULL), index* back_lines_count assuming(back_lines_count != NULL), index width_limit assuming(width_limit > 0)) {
+    index inline_index = 0;
+    while ((**current).prev != NULL && (**current).prev->content != '\n') {
+        *current = (**current).prev;
+    }
+    *back_lines_count += inline_index / width_limit;
+    return inline_index % width_limit;
+}
+
+index meaning(forward_lines_count) get_forward_lines_count(Char* current assuming(current != NULL), index width_limit assuming(width_limit > 0), index current_width_index assuming(current_width_index < width_limit), index forward_lines_limit) {
+    index forward_lines_count = 0;
+    for (; current->next != NULL && forward_lines_count < forward_lines_limit; current = current->next) {
+        ++current_width_index;
+        if (current_width_index == width_limit) {
+            current_width_index = 0;
+            ++forward_lines_count;
+        }
+        if (current->content == '\n') {
+            current_width_index = 0;
+            ++forward_lines_count;
+        }
+    }
+    return forward_lines_count;
+}
+
+index min(index a, index b) {
+    return a > b ? a : b;
+}
+
+index saturating_subtract(index minuend, index subtrahend) {
+    return minuend - min(minuend, subtrahend);
+}
+
+typedef struct RenderData {
+    Char* render_beginning assuming(render_beginning != NULL);
+    index cursor_row_index;
+    index cursor_column_index;
+} RenderData;
+
+RenderData meaning(render_data) assuming(render_data.cursor_row_index < height_limit && render_data.cursor_column_index < width_limit) find_render_data(Char* current, index width_limit assuming(width_limit > 0), index height_limit assuming(height_limit > 0)) {
+    Char* initial = current;
+    const index current_lines_count = 1;
+    index back_lines_count = 0;
+    index initial_width_index = find_line_beginning(&current, &back_lines_count, width_limit);
+    index forward_lines_limit = saturating_subtract(height_limit, current_lines_count + back_lines_count);
+    index forward_lines_count = get_forward_lines_count(initial, width_limit, initial_width_index, forward_lines_limit);
+    index back_lines_limit = saturating_subtract(height_limit, current_lines_count + back_lines_count + min(forward_lines_count, height_limit / 2));
+    while (back_lines_count < back_lines_limit && initial->prev != NULL) {
+        initial = initial->prev;
+        ++back_lines_count;
+        find_line_beginning(&current, &back_lines_count, width_limit);
+    }
+    index extra_lines = saturating_subtract(back_lines_count, back_lines_limit);
+    for (index i = 0; i < extra_lines; ++i) {
+        for (index i = 0; i < width_limit; ++i) {
+            initial = initial->next;
+        }
+    }
+    return (RenderData) {
+        .cursor_row_index = initial_width_index,
+        .cursor_column_index = back_lines_count - extra_lines,
+        .render_beginning = initial,
+    };
+}
+
+void render(Char* beginning) {
+    for (; beginning != NULL; beginning = beginning->next) {
+        if (beginning->content == '\n') {
+            printf(" ");
+        }
+        printf("%c", beginning->content);
     }
 }
 
 int main(void) {
-    Char* current = malloc(sizeof(Char));
-    die_if_null(current);
-    current->prev = NULL;
-    current->value = '1';
-    current->next = NULL;
-    Char* cursor = NULL;
-    for (char* c = "hello, world!\n\n\n\n\n\n\nCRAPPPP\n1234567890abcdef|lalalalalalala\narstarstarstarstarsntaierthdienshtdienhrstidenhrsitden\nrotendoirsetndoiersntdoiernstodei\nrstidenroistendoiernstodeirnstoid\n\n\n\n\narst\narstarst\narstarstarst\n\n\n\n"; *c; ++c) {
-        if (*c == '|') {
-            cursor = current;
-        } else {
-            current->next = malloc(sizeof(Char));
-            die_if_null(current->next);
-            current->next->prev = current;
-            current = current->next;
-            current->next = NULL;
-            current->value = *c;
-        }
+    Char* input = str_to_Char("a\n\n\nb\n\ncdefghi\n\n\n\n");
+    render(input);
+    index desired_x = 0;
+    index desired_y = 0;
+    for (; input != NULL; input = input->next) {
+        index width_limit = 5;
+        index height_limit = 5;
+        RenderData render_data = find_render_data(input, width_limit, height_limit);
+        index x = render_data.cursor_column_index;
+        index y = render_data.cursor_row_index;
+        printf("x=%u y=%u\n", x, y);
+        render(render_data.render_beginning);
+        printf("\n\n");
     }
-    die_if_null(cursor);
-    render(cursor, 8, 6);
 }

@@ -74,3 +74,26 @@ forever:
 then, go "before" lines before, and start rendering
 
 good plan
+
+====
+
+I forgot everything, it's been five months since I last edited this document. I don't wanna go into the old stuff because I remember it's all faulty, but the new algorithm is:
+* Lines are separated by "\n", "\n"s belong to ends of lines and are invisible in there (consider the case of "a\n\nb" and how editables work, although there also may be an argument for hiding "\n"s and skipping right over them, and in editables they will be erasable indirectly because in "a\n\nb" any "\n" can be deleted to get "a\nb"; actually, i guess i should go for skipping "\n"s because they are confusing AF, so there's now a new restriction: we cannot stand on an "\n", yet we can start rendering from an "\n"; yet at the same time this will force people to start new lines not from anywhere they want, but from a later paragraph (e.g. in "a\n\nb", if insertion happens *before*, people will be forced to start new paragraphs from "b" exclusively, and also there will be no way to insert stuff at an end of a paragraph, which would be annoying as fuck, so "\n"s should be invisible characters at the end of each line; this means that now "\n"s must occupy a character slot as they are present at interaction; the character slot should probably just look empty))
+
+aeirsnotienarositen
+
+test
+
+biresntoiaernstoi
+
+PERHAPS SHITTY:
+* Go to the beginning of the current line to figure out where the cursor is (so, just seek until the previous is "\n" or NULL, this is how we get the index (the amount of moves required to get to such a condition *is* the index))
+* Go back one character to get onto the previous line (bump the past line count if successful). Scan that line as well. All this shit needs to happen in a "while" loop, we need to see if there are enough past lines (full screen-1) to fill the screen
+* Go forward after the current character (we already know where exactly in the width it is) and see how many forward lines there are
+* Given all that information, get back enough lines to get to or past the threshold, and then correct your position by going forward until we're perfectly at the threshold
+
+MAYBE CLEANER (note: "current_lines" is const "1"):
+* Go to the beginning of the current line to figure out where the cursor is (so, just seek until the previous is "\n" or NULL, this is how we get the index (the amount of moves required to get to such a condition *is* the index))
+* Go forward after the current character (we already know where exactly in the width it is) and see how many forward lines there are (max is full_screen-current_lines-past_lines, since no more can be rendered)
+* Go back from the very first starting position, scan lines backwards until we either have a full screen (condition: back_lines + current_lines + min(forward_lines, half_of_screen) >= full_screen) or we're at the end (prev=NULL)
+* Correct your position by going forward until we're perfectly at the threshold (just blindly go next for width*extra_lines chars)

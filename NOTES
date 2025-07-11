@@ -23,3 +23,28 @@ Actions:
 * Any other character:
     * When cursor is on editable cell:
         * Insert that "any other character" as editable cell, before the current cell
+
+Possible colors?:
+Plain text - white on black
+Buttons - white on blue
+Edit areas - black on yellow
+Important stuff - red on black
+# I think that bg=black should be for non-interactable stuff and bg=other should be for interactive stuff
+
+=== API ===
+
+== Somewhat complicated, with colors ==
+
+StringChar = StringChar*? next, char content, ForegroundColor fg_color, CharType type, StringChar*? prev; // ForegroundColor I don't want to define, but it should include "default"
+CharType = Plain() | Sendable(int id) | Editable();
+int sent_id = query(StringChar mut* current_char); // Any edits are supposed to happen within the provided string; the user must ensure that it's not an editable that's sent, otherwise it can be deleted if it's not the last editable and will thus invalidate the pointer, breaking everything to shit. Can be prevented by creating separate types, but fuck it, who cares
+
+== Without colors, types are a number ==
+
+StringChar = StringChar*? next, char content, CharType type, int id, StringChar*? prev;
+CharType = Plain = 0 | Important = 1 | Sendable = 2 | Editable = 3;
+int sent_id = query(StringChar mut* current_char);
+
+=== SEPARATION OF CONCERNS ===
+
+From the entire StringChar, for mapping out character rendering positions, `CharType type` and `int id` are not needed, and out of `char content` it's only important if the character is a newline or not. Other than that, for mapping the other two parameters are the screen width and height
