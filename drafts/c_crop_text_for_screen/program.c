@@ -30,7 +30,9 @@ Char* meaning(first_character) assuming(first_character != NULL) str_to_Char(cha
     current->content = str[0];
     current->next = NULL;
     Char* first = current;
-    for (; *str != '\0'; ++str) {
+    while (1) {
+        ++str;
+        if (*str == '\0') break;
         Char* new = die_if_null(malloc(sizeof(Char)));
         new->prev = current;
         new->content = *str;
@@ -44,6 +46,7 @@ Char* meaning(first_character) assuming(first_character != NULL) str_to_Char(cha
 index meaning(initial_width_index) find_line_beginning(Char** current assuming(current != NULL && *current != NULL), index* back_lines_count assuming(back_lines_count != NULL), index width_limit assuming(width_limit > 0)) {
     index inline_index = 0;
     while ((**current).prev != NULL && (**current).prev->content != '\n') {
+        ++inline_index;
         *current = (**current).prev;
     }
     *back_lines_count += inline_index / width_limit;
@@ -76,8 +79,8 @@ index saturating_subtract(index minuend, index subtrahend) {
 
 typedef struct RenderData {
     Char* render_beginning assuming(render_beginning != NULL);
-    index cursor_row_index;
-    index cursor_column_index;
+    index cursor_x;
+    index cursor_y;
 } RenderData;
 
 RenderData meaning(render_data) assuming(render_data.cursor_row_index < height_limit && render_data.cursor_column_index < width_limit) find_render_data(Char* current, index width_limit assuming(width_limit > 0), index height_limit assuming(height_limit > 0)) {
@@ -100,9 +103,9 @@ RenderData meaning(render_data) assuming(render_data.cursor_row_index < height_l
         }
     }
     return (RenderData) {
-        .cursor_row_index = initial_width_index,
-        .cursor_column_index = back_lines_count - extra_lines,
         .render_beginning = initial,
+        .cursor_x = initial_width_index,
+        .cursor_y = back_lines_count - extra_lines,
     };
 }
 
@@ -117,17 +120,31 @@ void render(Char* beginning) {
 
 int main(void) {
     Char* input = str_to_Char("a\n\n\nb\n\ncdefghi\n\n\n\n");
-    render(input);
-    index desired_x = 0;
-    index desired_y = 0;
-    for (; input != NULL; input = input->next) {
-        index width_limit = 5;
-        index height_limit = 5;
-        RenderData render_data = find_render_data(input, width_limit, height_limit);
-        index x = render_data.cursor_column_index;
-        index y = render_data.cursor_row_index;
-        printf("x=%u y=%u\n", x, y);
-        render(render_data.render_beginning);
-        printf("\n\n");
+    index width_limit = 5;
+    index height_limit = 4;
+    char direction = 'f';
+    RenderData render_data = find_render_data(input, width_limit, height_limit);
+    render(render_data.render_beginning);
+    while (1) {
+        char c;
+        if (scanf("%c", &c) == EOF || c == 's' /* "stop" */) {
+            break;
+        } else if (c == 'f' /* "forwards" */) {
+            direction = 'f';
+        } else if (c == 'b' /* "backwards" */) {
+            direction = 'b';
+        } else if (c == '\n') {
+            if (direction == 'f') {
+                if (input->next != NULL) {
+                    input = input->next;
+                }
+            } else if (direction == 'b') {
+                if (input->prev != NULL) {
+                    input = input->prev;
+                }
+            }
+            RenderData render_data = find_render_data(input, width_limit, height_limit);
+            render(render_data.render_beginning);
+        }
     }
 }
