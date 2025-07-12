@@ -20,6 +20,7 @@ void* die_if_null(void* ptr) {
     return ptr;
 }
 
+// Tested, correct
 Char* meaning(first_character) assuming(first_character != NULL) str_to_Char(char* str assuming(str != NULL)) {
     if (str[0] == '\0') {
         fprintf(stderr, "Empty str in str_to_Char\n");
@@ -43,6 +44,7 @@ Char* meaning(first_character) assuming(first_character != NULL) str_to_Char(cha
     return first;
 }
 
+// Tested, correct
 index meaning(initial_width_index) find_line_beginning(Char** current assuming(current != NULL && *current != NULL), index* back_lines_count assuming(back_lines_count != NULL), index width_limit assuming(width_limit > 0)) {
     index inline_index = 0;
     while ((**current).prev != NULL && (**current).prev->content != '\n') {
@@ -69,10 +71,12 @@ index meaning(forward_lines_count) get_forward_lines_count(Char* current assumin
     return forward_lines_count;
 }
 
+// Obviously correct
 index min(index a, index b) {
-    return a > b ? a : b;
+    return a < b ? a : b;
 }
 
+// Obviously correct
 index saturating_subtract(index minuend, index subtrahend) {
     return minuend - min(minuend, subtrahend);
 }
@@ -109,8 +113,10 @@ RenderData meaning(render_data) assuming(render_data.cursor_row_index < height_l
     };
 }
 
-void render(Char* beginning) {
-    for (; beginning != NULL; beginning = beginning->next) {
+void render(RenderData render_data, index width_limit assuming(width_limit > 0), index height_limit assuming(height_limit > 0)) {
+    index width_index = 0;
+    for (Char* beginning = render_data.render_beginning; beginning != NULL; beginning = beginning->next) {
+        ++width_index;
         if (beginning->content == '\n') {
             printf(" ");
         }
@@ -118,14 +124,18 @@ void render(Char* beginning) {
     }
 }
 
+void clear_screen() {
+    printf("\033[2J\033[H");
+}
+
 int main(void) {
     Char* input = str_to_Char("a\n\n\nb\n\ncdefghi\n\n\n\n");
     index width_limit = 5;
     index height_limit = 4;
     char direction = 'f';
-    RenderData render_data = find_render_data(input, width_limit, height_limit);
-    render(render_data.render_beginning);
     while (1) {
+        clear_screen();
+        render(find_render_data(input, width_limit, height_limit), width_limit, height_limit);
         char c;
         if (scanf("%c", &c) == EOF || c == 's' /* "stop" */) {
             break;
@@ -143,8 +153,6 @@ int main(void) {
                     input = input->prev;
                 }
             }
-            RenderData render_data = find_render_data(input, width_limit, height_limit);
-            render(render_data.render_beginning);
         }
     }
 }
