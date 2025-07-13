@@ -97,3 +97,8 @@ MAYBE CLEANER (note: "current_lines" is const "1"):
 * Go forward after the current character (we already know where exactly in the width it is) and see how many forward lines there are (max is full_screen-current_lines-past_lines, since no more can be rendered)
 * Go back from the very first starting position, scan lines backwards until we either have a full screen (condition: back_lines + current_lines + min(forward_lines, half_of_screen) >= full_screen) or we're at the end (prev=NULL)
 * Correct your position by going forward until we're perfectly at the threshold (just blindly go next for width*extra_lines chars)
+
+Very general:
+* Go back to find out the width index
+* Go forward knowing the width index
+* Go back until matches
