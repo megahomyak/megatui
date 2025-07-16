@@ -1,19 +1,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/* Some helpful macros here, just help readability for unholdable restrictions. Better than doc comments, IMO. */
-#define meaning(meaning)
-#define assuming(assumption)
+#define nullable
+#define not_null
 
-typedef unsigned int index;
+typedef unsigned int uint;
+typedef unsigned int uint_nonzero;
 
 typedef struct Char {
-    struct Char* prev assuming(back != NULL);
+    struct Char nullable* prev;
     char content;
-    struct Char* next assuming(forward != NULL);
+    struct Char nullable* next;
 } Char;
 
-void* die_if_null(void* ptr) {
+void not_null* die_if_null(void nullable* ptr) {
     if (ptr == NULL) {
         exit(1);
     }
@@ -21,7 +21,7 @@ void* die_if_null(void* ptr) {
 }
 
 // Tested, correct
-Char* meaning(first_character) assuming(first_character != NULL) str_to_Char(char* str assuming(str != NULL)) {
+Char not_null* str_to_Char(char not_null* str) {
     if (str[0] == '\0') {
         fprintf(stderr, "Empty str in str_to_Char\n");
         exit(1);
@@ -44,15 +44,24 @@ Char* meaning(first_character) assuming(first_character != NULL) str_to_Char(cha
     return first;
 }
 
+typedef struct {
+    Char* char_;
+    uint input_soft_line_index;
+    uint back_hard_lines_count;
+} HardLineBeginning;
+
 // Tested, correct
-index meaning(initial_width_index) find_line_beginning(Char** current assuming(current != NULL && *current != NULL), index* back_lines_count assuming(back_lines_count != NULL), index width_limit assuming(width_limit > 0)) {
-    index inline_index = 0;
-    while ((**current).prev != NULL && (**current).prev->content != '\n') {
-        ++inline_index;
-        *current = (**current).prev;
+HardLineBeginning find_line_beginning(Char not_null* current, uint_nonzero width_limit) {
+    uint input_hard_line_index = 0;
+    while (current->prev != NULL && current->prev->content != '\n') {
+        ++input_hard_line_index;
+        current = current->prev;
     }
-    *back_lines_count += inline_index / width_limit;
-    return inline_index % width_limit;
+    return (HardLineBeginning) {
+        .input_soft_line_index = input_hard_line_index % width_limit,
+        .char_ = current,
+        .back_hard_lines_count = input_hard_line_index / width_limit,
+    };
 }
 
 index meaning(forward_lines_count) get_forward_lines_count(Char* current assuming(current != NULL), index width_limit assuming(width_limit > 0), index current_width_index assuming(current_width_index < width_limit), index forward_lines_limit) {
