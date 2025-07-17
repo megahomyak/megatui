@@ -1,64 +1,62 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#define nullable
-#define not_null
-#define Char_loop_prev(producer, consumer) for (Char nullable* consumer = producer->prev; consumer != NULL; consumer = consumer->prev)
-#define Char_loop_next(producer, consumer) for (Char nullable* consumer = producer->next; consumer != NULL; consumer = consumer->next)
+#define notnull
+#define repeat(count, index_receiver) for (uint index_receiver = 0; index_receiver < count; ++index_receiver)
+#define Char_loop_prev(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->prev__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->prev__nullable)
+#define Char_loop_next(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->next__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
 typedef unsigned int uint;
 typedef uint WidthLimit /* > 0 */;
 typedef uint WidthIndex /* < WidthLimit */;
 typedef uint HeightLimit /* > 0 */;
 typedef uint HeightIndex /* < HeightLimit */;
 typedef struct Char {
-    struct Char nullable* prev;
+    struct Char* prev__nullable;
     char content;
-    struct Char nullable* next;
+    struct Char* next__nullable;
 } Char;
 typedef struct {
-    WidthLimit _width_limit;
-} ParsingContext;
-typedef struct {
-    Char not_null* _char;
-    ParsingContext not_null* _parsing_context;
+    Char* beginning_char__RO_notnull;
+    WidthLimit width_limit__RO;
 } SoftLine;
 typedef struct {
-    SoftLine _soft_line;
-    WidthIndex _selection_char_width_index;
-} SelectionSoftLine;
+    WidthIndex width_index__RO;
+    SoftLine soft_line__RO;
+} SelectedChar;
 typedef struct {
-    bool exists;
-    SoftLine soft_line;
+    bool exists__RO;
+    SoftLine soft_line__RO;
 } OptionalSoftLine;
 typedef struct {
-    WidthIndex selection_char_width_index;
-    HeightIndex selection_char_height_index;
-    Char beginning_char;
+    Char* selected_char__RO_notnull;
+    SoftLine beginning_line__RO;
 } RenderData;
-void not_null* die_if_null(void nullable* ptr) {
-    if (ptr == NULL) {
+void notnull* die_if_null(void* ptr__nullable) {
+    if (ptr__nullable == NULL) {
         exit(1);
+    } else {
+        void* ptr__notnull = ptr__nullable;
+        return ptr__notnull;
     }
-    return ptr;
 }
-Char not_null* str_to_Char(char not_null* str) {
-    if (str[0] == '\0') {
+Char notnull* str_to_Char(char* str__notnull) {
+    if (str__notnull[0] == '\0') {
         fprintf(stderr, "Empty str in str_to_Char\n");
         exit(1);
     }
     Char* current = die_if_null(malloc(sizeof(Char)));
-    current->prev = NULL;
-    current->content = str[0];
-    current->next = NULL;
+    current->prev__nullable = NULL;
+    current->content = str__notnull[0];
+    current->next__nullable = NULL;
     Char* first = current;
     while (1) {
-        ++str;
-        if (*str == '\0') break;
+        ++str__notnull;
+        if (*str__notnull == '\0') break;
         Char* new = die_if_null(malloc(sizeof(Char)));
-        new->prev = current;
-        new->content = *str;
-        new->next = current->next;
-        current->next = new;
+        new->prev__nullable = current;
+        new->content = *str__notnull;
+        new->next__nullable = current->next__nullable;
+        current->next__nullable = new;
         current = new;
     }
     return first;
@@ -66,48 +64,35 @@ Char not_null* str_to_Char(char not_null* str) {
 uint min(uint a, uint b) {
     return a < b ? a : b;
 }
-uint saturating_subtract(uint minuend, uint subtrahend) {
+uint subtract_saturating(uint minuend, uint subtrahend) {
     return minuend - min(minuend, subtrahend);
 }
-ParsingContext ParsingContext_make(WidthLimit width_limit) {
-    return (ParsingContext) {
-        ._width_limit = width_limit,
-    };
-}
-WidthLimit ParsingContext_get_width_limit(ParsingContext not_null* parsing_context) {
-    return parsing_context->_width_limit;
-}
-SelectionSoftLine SelectionSoftLine_make_from_selection_char(Char not_null* char_, ParsingContext not_null* parsing_context) {
-    uint selection_char_hard_line_index = 0;
-    Char_loop_prev(char_, _prev) {
-        if (_prev->content == '\n') break;
-        ++selection_char_hard_line_index;
+SelectedChar SelectedChar_make(Char* char__notnull, WidthLimit width_limit) {
+    uint index_in_hard_line = 0;
+    Char_loop_prev(char__notnull, prev__notnull) {
+        if (prev__notnull->content == '\n') break;
+        ++index_in_hard_line;
     }
-    WidthIndex width_index = selection_char_hard_line_index % ParsingContext_get_width_limit(parsing_context);
-    return (SelectionSoftLine) {
-        ._soft_line = (SoftLine) {
-            ._char = char_,
-            ._parsing_context = parsing_context,
+    WidthIndex width_index = index_in_hard_line % width_limit;
+    Char* beginning_char__notnull = char__notnull;
+    repeat(width_index, _i) {
+        beginning_char__notnull = die_if_null(beginning_char__notnull->prev__nullable);
+    }
+    return (SelectedChar) {
+        .soft_line__RO = (SoftLine) {
+            .width_limit__RO = width_limit,
+            .beginning_char__RO_notnull = beginning_char__notnull,
         },
-        ._selection_char_width_index = width_index,
+        .width_index__RO = width_index,
     };
 }
-SoftLine SelectionSoftLine_get_soft_line(SelectionSoftLine not_null* selection_soft_line) {
-    return selection_soft_line->_soft_line;
-}
-SoftLine SelectionSoftLine_get_selection_char_width_index(SelectionSoftLine not_null* selection_soft_line) {
-    return selection_soft_line->_selection_char_width_index;
-}
-Char not_null* SoftLine_get_selected_char(SoftLine not_null* soft_line) {
-    return soft_line->_char;
-}
-OptionalSoftLine SoftLine_get_optional_next(SoftLine not_null* soft_line) {
+OptionalSoftLine SoftLine_try_get_next(SoftLine* soft_line__notnull) {
     // TODO
 }
-OptionalSoftLine SoftLine_get_optional_prev(SoftLine not_null* soft_line) {
+OptionalSoftLine SoftLine_try_get_prev(SoftLine* soft_line__notnull) {
     // TODO
 }
-RenderData RenderData_make_from_Char_selection(Char not_null* selection, WidthLimit width_limit) {
+RenderData RenderData_make(SelectedChar selected_char) {
     ParsingContext parsing_context = ParsingContext_make(width_limit);
     SoftLine selection_line = SoftLine_make_from_Char(selection, &parsing_context);
     return (RenderData) {
