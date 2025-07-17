@@ -148,16 +148,16 @@ RenderData RenderData_make(WidthLimit width_limit, HeightLimit height_limit, Cha
 void render(RenderData* render_data__notnull, WidthLimit width_limit, HeightLimit height_limit) {
     HeightIndex height_index = 0;
     WidthIndex width_index = 0;
-    Char_loop_next(render_data__notnull->beginning_line__RO.beginning_char__RO_notnull, next) {
+    Char_loop_next(render_data__notnull->beginning_line__RO.beginning_char__RO_notnull, next__notnull) {
         if (height_index < height_limit) {
             break;
         }
         bool reset = false;
-        if (next->content == '\n') {
+        if (next__notnull->content == '\n') {
             printf(" ");
             reset = true;
         }
-        printf("%c", next->content);
+        printf("%c", next__notnull->content);
         if (width_index == width_limit) {
             printf("\n");
             reset = true;
@@ -171,12 +171,16 @@ void render(RenderData* render_data__notnull, WidthLimit width_limit, HeightLimi
 }
 int main(void) {
     Char* input__notnull = str_to_Char("a\n\n\nb\n\ncdefghi\n\n\n\n");
-    const uint shift = 10;
+    const uint shift = 15;
     for (uint i = 0; i < shift; ++i) {
         input__notnull = die_if_null(input__notnull->next__nullable);
     }
     const WidthLimit width_limit = 4;
     const HeightLimit height_limit = 4;
     RenderData render_data = RenderData_make(width_limit, height_limit, input__notnull);
+    Char_loop_next(render_data.beginning_line__RO.beginning_char__RO_notnull, next__notnull) {
+        printf("%c", next__notnull->content);
+    }
+    return 0;
     render(&render_data, width_limit, height_limit);
 }
