@@ -1,14 +1,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#define notnull
 #define Char_loop_prev(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->prev__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->prev__nullable)
 #define Char_loop_next(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->next__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
+#define repeat(count) for (uint i = 0; i < count; ++i)
 typedef unsigned int uint;
-typedef uint WidthLimit /* > 0 */;
-typedef uint WidthIndex /* < WidthLimit */;
-typedef uint HeightLimit /* > 0 */;
-typedef uint HeightIndex /* < HeightLimit */;
+typedef uint uint_notnull;
 typedef struct Char {
     struct Char* prev__nullable;
     char content;
@@ -16,7 +13,7 @@ typedef struct Char {
 } Char;
 typedef struct {
     Char* beginning_char__RO_notnull;
-    WidthLimit width_limit__RO;
+    uint width_limit__RO;
 } SoftLine;
 typedef struct {
     bool exists__RO;
@@ -26,7 +23,7 @@ typedef struct {
     Char* selected_char__RO_notnull;
     SoftLine beginning_line__RO;
 } RenderData;
-void notnull* die_if_null(void* ptr__nullable) {
+void* die_if_null__notnull(void* ptr__nullable) {
     if (ptr__nullable == NULL) {
         exit(1);
     } else {
@@ -34,12 +31,12 @@ void notnull* die_if_null(void* ptr__nullable) {
         return ptr__notnull;
     }
 }
-Char notnull* str_to_Char(char* str__notnull) {
+Char* str_to_Char__notnull(char* str__notnull) {
     if (str__notnull[0] == '\0') {
         fprintf(stderr, "Empty str in str_to_Char\n");
         exit(1);
     }
-    Char* current = die_if_null(malloc(sizeof(Char)));
+    Char* current = die_if_null__notnull(malloc(sizeof(Char)));
     current->prev__nullable = NULL;
     current->content = str__notnull[0];
     current->next__nullable = NULL;
@@ -47,7 +44,7 @@ Char notnull* str_to_Char(char* str__notnull) {
     while (1) {
         ++str__notnull;
         if (*str__notnull == '\0') break;
-        Char* new = die_if_null(malloc(sizeof(Char)));
+        Char* new = die_if_null__notnull(malloc(sizeof(Char)));
         new->prev__nullable = current;
         new->content = *str__notnull;
         new->next__nullable = current->next__nullable;
@@ -62,16 +59,16 @@ uint min(uint a, uint b) {
 uint subtract_saturating(uint minuend, uint subtrahend) {
     return minuend - min(minuend, subtrahend);
 }
-SoftLine SoftLine_make(Char* char__notnull, WidthLimit width_limit) {
+SoftLine SoftLine_make(Char* char__notnull, uint_notnull width_limit) {
     uint index_in_hard_line = 0;
     Char_loop_prev(char__notnull, prev__notnull) {
         if (prev__notnull->content == '\n') break;
         ++index_in_hard_line;
     }
-    WidthIndex width_index = index_in_hard_line % width_limit;
+    uint width_index = index_in_hard_line % width_limit;
     Char* beginning_char__notnull = char__notnull;
-    for (WidthIndex i = 0; i < width_index; ++i) {
-        beginning_char__notnull = die_if_null(beginning_char__notnull->prev__nullable);
+    repeat(width_index) {
+        beginning_char__notnull = die_if_null__notnull(beginning_char__notnull->prev__nullable);
     }
     return (SoftLine) {
         .width_limit__RO = width_limit,
@@ -81,7 +78,7 @@ SoftLine SoftLine_make(Char* char__notnull, WidthLimit width_limit) {
 OptionalSoftLine SoftLine_try_get_next(SoftLine* soft_line__notnull) {
     Char* beginning__not_null = soft_line__notnull->beginning_char__RO_notnull;
     bool exists = true;
-    for (WidthLimit i = 0; i < soft_line__notnull->width_limit__RO; ++i) {
+    repeat(soft_line__notnull->width_limit__RO) {
         if (beginning__not_null->next__nullable == NULL) {
             exists = false;
             break;
@@ -113,10 +110,10 @@ OptionalSoftLine SoftLine_try_get_prev(SoftLine* soft_line__notnull) {
         };
     }
 }
-RenderData RenderData_make(WidthLimit width_limit, HeightLimit height_limit, Char* selected_char__notnull) {
+RenderData RenderData_make(uint_notnull width_limit, uint_notnull height_limit, Char* selected_char__notnull) {
     SoftLine selected_line = SoftLine_make(selected_char__notnull, width_limit);
-    const HeightLimit lines_selected = 1;
-    HeightLimit lines_after = 0;
+    const uint lines_selected = 1;
+    uint lines_after = 0;
     SoftLine line_after = selected_line;
     while (lines_after + lines_selected < height_limit) {
         OptionalSoftLine optional_line_after = SoftLine_try_get_next(&line_after);
@@ -127,10 +124,10 @@ RenderData RenderData_make(WidthLimit width_limit, HeightLimit height_limit, Cha
             break;
         }
     }
-    HeightLimit limit_of_lines_before = subtract_saturating(height_limit, lines_selected + min(lines_after, height_limit / 2));
-    HeightLimit lines_before = 0;
+    uint max_lines_before = subtract_saturating(height_limit, lines_selected + min(lines_after, height_limit / 2));
+    uint lines_before = 0;
     SoftLine line_before = selected_line;
-    while (lines_before < limit_of_lines_before) {
+    while (lines_before < max_lines_before) {
         OptionalSoftLine optional_line_before = SoftLine_try_get_prev(&line_before);
         if (optional_line_before.exists__RO) {
             line_before = optional_line_before.soft_line__RO;
@@ -170,17 +167,26 @@ void render(RenderData* render_data__notnull, WidthLimit width_limit, HeightLimi
     }
 }
 int main(void) {
-    Char* input__notnull = str_to_Char("a\n\n\nb\n\ncdefghi\n\n\n\n");
-    const uint shift = 15;
-    for (uint i = 0; i < shift; ++i) {
-        input__notnull = die_if_null(input__notnull->next__nullable);
-    }
-    const WidthLimit width_limit = 4;
-    const HeightLimit height_limit = 4;
-    RenderData render_data = RenderData_make(width_limit, height_limit, input__notnull);
-    Char_loop_next(render_data.beginning_line__RO.beginning_char__RO_notnull, next__notnull) {
+    Char* selected_char__notnull = str_to_Char("Sa\n\n\nb\n\ncdefghi\n\n\n\nE");
+    printf("Input:\n");
+    Char_loop_next(selected_char__notnull, next__notnull) {
         printf("%c", next__notnull->content);
     }
-    return 0;
-    render(&render_data, width_limit, height_limit);
+    printf("\n");
+    const uint_notnull width_limit = 4;
+    const uint_notnull height_limit = 4;
+    uint shift = 0;
+    Char* selected_char__nullable = selected_char__notnull;
+    while (selected_char__nullable != NULL) {
+        Char* selected_char__notnull = die_if_null__notnull(selected_char__nullable);
+        printf("Shift %u:\n", shift);
+        ++shift;
+        RenderData render_data = RenderData_make(width_limit, height_limit, selected_char__notnull);
+        Char_loop_next(render_data.beginning_line__RO.beginning_char__RO_notnull, next__notnull) {
+            printf("%c", next__notnull->content);
+        }
+        printf("\n");
+        selected_char__nullable = selected_char__notnull->next__nullable;
+    }
+    // render(&render_data, width_limit, height_limit);
 }
