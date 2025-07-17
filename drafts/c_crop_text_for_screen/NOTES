@@ -102,3 +102,34 @@ Very general:
 * Go back to find out the width index
 * Go forward knowing the width index
 * Go back until matches
+
+== Concepts: ==
+
+Text := Hard Line + [Hard Line]
+Hard Line := Soft Line + [Soft Line]
+Soft Line := Char + [Char]
+
+Text { Hard Line { Soft Line
+ Soft Line
+ Soft Line }
+Hard Line { Soft Line
+ Soft Line
+ Soft Line }}
+
+The "Selected Char" is somewhere in there, on a "Selected Soft Line".
+
+\n -> " " + hard line end == "\n"s are part of soft lines, get interpreted as a space
+
+=== Application of concepts ===
+
+DRAFT: W/O a cursor:
+* We start somewhere in a hard line
+* Scan to start of hard line, thus get soft line access, internal soft line index and the count of soft lines before (find_hard_line_beginning: (Char char, uint soft_line_length_limit) -> { SoftLine given_soft_line, HardLine found_hard_line, uint soft_lines_before_count }); SoftLine: get_internal_index() -> uint, get_next() -> Option<SoftLine>;
+* Scan forwards (get_next_soft_line: (SoftLine soft_line, soft_line_length_limit))
+
+WidthLimit: uint > 0;
+WidthIndex: uint < WidthLimit;
+HeightLimit: uint > 0;
+HeightIndex: uint < HeightLimit;
+SoftLine { Char _char, WidthLimit _width_limit, WidthIndex _width_index }: fromChar(Char, WidthLimit) -> SoftLine, getWidthIndex(SoftLine) -> WidthIndex < WidthLimit, getMaybeNext(SoftLine) -> Maybe<SoftLine>, getMaybePrev(SoftLine) -> Maybe<SoftLine>;
+findRenderData(Char, WidthLimit, HeightLimit) -> (Char, WidthIndex, HeightIndex);
