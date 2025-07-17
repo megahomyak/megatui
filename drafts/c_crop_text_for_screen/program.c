@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #define notnull
-#define repeat(count, index_receiver) for (uint index_receiver = 0; index_receiver < count; ++index_receiver)
 #define Char_loop_prev(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->prev__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->prev__nullable)
 #define Char_loop_next(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->next__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
 typedef unsigned int uint;
@@ -19,10 +18,6 @@ typedef struct {
     Char* beginning_char__RO_notnull;
     WidthLimit width_limit__RO;
 } SoftLine;
-typedef struct {
-    WidthIndex width_index__RO;
-    SoftLine soft_line__RO;
-} SelectedChar;
 typedef struct {
     bool exists__RO;
     SoftLine soft_line__RO;
@@ -67,7 +62,7 @@ uint min(uint a, uint b) {
 uint subtract_saturating(uint minuend, uint subtrahend) {
     return minuend - min(minuend, subtrahend);
 }
-SelectedChar SelectedChar_make(Char* char__notnull, WidthLimit width_limit) {
+SoftLine SoftLine_make(Char* char__notnull, WidthLimit width_limit) {
     uint index_in_hard_line = 0;
     Char_loop_prev(char__notnull, prev__notnull) {
         if (prev__notnull->content == '\n') break;
@@ -75,99 +70,113 @@ SelectedChar SelectedChar_make(Char* char__notnull, WidthLimit width_limit) {
     }
     WidthIndex width_index = index_in_hard_line % width_limit;
     Char* beginning_char__notnull = char__notnull;
-    repeat(width_index, _i) {
+    for (WidthIndex i = 0; i < width_index; ++i) {
         beginning_char__notnull = die_if_null(beginning_char__notnull->prev__nullable);
     }
-    return (SelectedChar) {
-        .soft_line__RO = (SoftLine) {
-            .width_limit__RO = width_limit,
-            .beginning_char__RO_notnull = beginning_char__notnull,
-        },
-        .width_index__RO = width_index,
+    return (SoftLine) {
+        .width_limit__RO = width_limit,
+        .beginning_char__RO_notnull = beginning_char__notnull,
     };
 }
 OptionalSoftLine SoftLine_try_get_next(SoftLine* soft_line__notnull) {
-    // TODO
-}
-OptionalSoftLine SoftLine_try_get_prev(SoftLine* soft_line__notnull) {
-    // TODO
-}
-RenderData RenderData_make(SelectedChar selected_char) {
-    ParsingContext parsing_context = ParsingContext_make(width_limit);
-    SoftLine selection_line = SoftLine_make_from_Char(selection, &parsing_context);
-    return (RenderData) {
-        .beginning = beginning,
-        .selection_width_index = selection_width_index,
-        .selection_height_index = selection_height_index,
-    };
-}
-
-RenderData meaning(render_data) assuming(render_data.cursor_row_index < height_limit && render_data.cursor_column_index < width_limit) find_render_data(Char* current, index width_limit assuming(width_limit > 0), index height_limit assuming(height_limit > 0)) {
-    Char* initial = current;
-    const index current_lines_count = 1;
-    index back_lines_count = 0;
-    index initial_width_index = find_line_beginning(&current, &back_lines_count, width_limit);
-    index forward_lines_limit = saturating_subtract(height_limit, current_lines_count + back_lines_count);
-    index forward_lines_count = get_forward_lines_count(initial, width_limit, initial_width_index, forward_lines_limit);
-    index back_lines_limit = saturating_subtract(height_limit, current_lines_count + back_lines_count + min(forward_lines_count, height_limit / 2));
-    while (back_lines_count < back_lines_limit && initial->prev != NULL) {
-        initial = initial->prev;
-        ++back_lines_count;
-        find_line_beginning(&current, &back_lines_count, width_limit);
-    }
-    index extra_lines = saturating_subtract(back_lines_count, back_lines_limit);
-    for (index i = 0; i < extra_lines; ++i) {
-        for (index i = 0; i < width_limit; ++i) {
-            initial = initial->next;
-        }
-    }
-    return (RenderData) {
-        .render_beginning = initial,
-        .cursor_x = initial_width_index,
-        .cursor_y = back_lines_count - extra_lines,
-    };
-}
-
-void render(RenderData render_data, index width_limit assuming(width_limit > 0), index height_limit assuming(height_limit > 0)) {
-    index width_index = 0;
-    for (Char* beginning = render_data.render_beginning; beginning != NULL; beginning = beginning->next) {
-        ++width_index;
-        if (beginning->content == '\n') {
-            printf(" ");
-        }
-        printf("%c", beginning->content);
-    }
-}
-
-void clear_screen() {
-    printf("\033[2J\033[H");
-}
-
-int main(void) {
-    Char* input = str_to_Char("a\n\n\nb\n\ncdefghi\n\n\n\n");
-    index width_limit = 5;
-    index height_limit = 4;
-    char direction = 'f';
-    while (1) {
-        clear_screen();
-        render(find_render_data(input, width_limit, height_limit), width_limit, height_limit);
-        char c;
-        if (scanf("%c", &c) == EOF || c == 's' /* "stop" */) {
+    Char* beginning__not_null = soft_line__notnull->beginning_char__RO_notnull;
+    bool exists = true;
+    for (WidthLimit i = 0; i < soft_line__notnull->width_limit__RO; ++i) {
+        if (beginning__not_null->next__nullable == NULL) {
+            exists = false;
             break;
-        } else if (c == 'f' /* "forwards" */) {
-            direction = 'f';
-        } else if (c == 'b' /* "backwards" */) {
-            direction = 'b';
-        } else if (c == '\n') {
-            if (direction == 'f') {
-                if (input->next != NULL) {
-                    input = input->next;
-                }
-            } else if (direction == 'b') {
-                if (input->prev != NULL) {
-                    input = input->prev;
-                }
+        } else {
+            bool newline_found = beginning__not_null->content == '\n';
+            beginning__not_null = beginning__not_null->next__nullable;
+            if (newline_found) {
+                break;
             }
         }
     }
+    return (OptionalSoftLine) {
+        .exists__RO = exists,
+        .soft_line__RO = (SoftLine) {
+            .beginning_char__RO_notnull = beginning__not_null,
+            .width_limit__RO = soft_line__notnull->width_limit__RO,
+        },
+    };
+}
+OptionalSoftLine SoftLine_try_get_prev(SoftLine* soft_line__notnull) {
+    if (soft_line__notnull->beginning_char__RO_notnull->prev__nullable == NULL) {
+        return (OptionalSoftLine) {
+            .exists__RO = false,
+        };
+    } else {
+        return (OptionalSoftLine) {
+            .exists__RO = true,
+            .soft_line__RO = SoftLine_make(soft_line__notnull->beginning_char__RO_notnull->prev__nullable, soft_line__notnull->width_limit__RO),
+        };
+    }
+}
+RenderData RenderData_make(WidthLimit width_limit, HeightLimit height_limit, Char* selected_char__notnull) {
+    SoftLine selected_line = SoftLine_make(selected_char__notnull, width_limit);
+    const HeightLimit lines_selected = 1;
+    HeightLimit lines_after = 0;
+    SoftLine line_after = selected_line;
+    while (lines_after + lines_selected < height_limit) {
+        OptionalSoftLine optional_line_after = SoftLine_try_get_next(&line_after);
+        if (optional_line_after.exists__RO) {
+            ++lines_after;
+            line_after = optional_line_after.soft_line__RO;
+        } else {
+            break;
+        }
+    }
+    HeightLimit limit_of_lines_before = subtract_saturating(height_limit, lines_selected + min(lines_after, height_limit / 2));
+    HeightLimit lines_before = 0;
+    SoftLine line_before = selected_line;
+    while (lines_before < limit_of_lines_before) {
+        OptionalSoftLine optional_line_before = SoftLine_try_get_prev(&line_before);
+        if (optional_line_before.exists__RO) {
+            line_before = optional_line_before.soft_line__RO;
+            ++lines_before;
+        } else {
+            break;
+        }
+    }
+    SoftLine beginning_line = line_before;
+    return (RenderData) {
+        .beginning_line__RO = beginning_line,
+        .selected_char__RO_notnull = selected_char__notnull,
+    };
+}
+void render(RenderData* render_data__notnull, WidthLimit width_limit, HeightLimit height_limit) {
+    HeightIndex height_index = 0;
+    WidthIndex width_index = 0;
+    Char_loop_next(render_data__notnull->beginning_line__RO.beginning_char__RO_notnull, next) {
+        if (height_index < height_limit) {
+            break;
+        }
+        bool reset = false;
+        if (next->content == '\n') {
+            printf(" ");
+            reset = true;
+        }
+        printf("%c", next->content);
+        if (width_index == width_limit) {
+            printf("\n");
+            reset = true;
+        }
+        ++width_index;
+        if (reset) {
+            width_index = 0;
+            ++height_index;
+        }
+    }
+}
+int main(void) {
+    Char* input__notnull = str_to_Char("a\n\n\nb\n\ncdefghi\n\n\n\n");
+    const uint shift = 10;
+    for (uint i = 0; i < shift; ++i) {
+        input__notnull = die_if_null(input__notnull->next__nullable);
+    }
+    const WidthLimit width_limit = 4;
+    const HeightLimit height_limit = 4;
+    RenderData render_data = RenderData_make(width_limit, height_limit, input__notnull);
+    render(&render_data, width_limit, height_limit);
 }
