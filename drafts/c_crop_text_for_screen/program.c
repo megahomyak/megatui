@@ -5,54 +5,60 @@
 #define Char_iter_prev(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->prev__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->prev__nullable)
 #define Char_iter_next(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->next__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
 #define repeat(count) for (uint i = 0; i < count; ++i)
+#define wrap(old_type, wrapper_type) typedef struct { old_type _content; } wrapper_type; old_type get_##wrapper_type(wrapper_type wrapper) { return wrapper._content; } wrapper_type make_##wrapper_type(old_type content)
+#define die(msg) { fprintf(stderr, "death at file %s, line %u: %s", __FILE__, __LINE__, msg); exit(EXIT_FAILURE); }
+#define wrap_ptr_notnull(old_type, wrapper_type) wrap(old_type, wrapper_type) { if (content == NULL) die("== NULL") return (wrapper_type) { ._content = content }; }
+#define wrap_identity(old_type, wrapper_type) wrap(old_type, wrapper_type) { return (wrapper_type) { ._content = content }; }
+#define checked_malloc_type(type) (type*) checked_malloc(sizeof(type))
+#define malloc_checked_type(type) make_##type(malloc(sizeof(type)))
+
 typedef unsigned int uint;
-typedef uint uint_notnull;
-typedef struct Char {
-    struct Char* prev__nullable;
-    char content;
-    struct Char* next__nullable;
-} Char;
-typedef struct {
-    Char* beginning_char__RO_notnull;
-    uint width_limit__RO;
-} SoftLine;
-typedef struct {
-    bool exists__RO;
-    SoftLine soft_line__RO;
-} OptionalSoftLine;
-typedef struct {
-    Char* selected_char__RO_notnull;
-    SoftLine beginning_line__RO;
-} RenderData;
-void* die_if_null__notnull(void* ptr__nullable) {
-    if (ptr__nullable == NULL) {
-        exit(1);
-    } else {
-        void* ptr__notnull = ptr__nullable;
-        return ptr__notnull;
-    }
+wrap(uint, uint_notnull) {
+    if (content == 0) die("== 0")
+    return (uint_notnull) {
+        ._content = content,
+    };
 }
-Char* str_to_Char__notnull(char* str__notnull) {
+void* checked_malloc(size_t size) {
+    void* result = malloc(size);
+    if (result == NULL) die("== NULL")
+    return result;
+}
+
+typedef struct char_list {
+    struct char_list* prev__nullable;
+    char content;
+    struct char_list* next__nullable;
+} char_list;
+wrap_ptr_notnull(char_list*, char_list_notnull)
+wrap_identity(char_list, soft_line)
+wrap_ptr_notnull(soft_line*, soft_line_notnull)
+
+typedef struct {
+    char_list* selected_char__RO_notnull;
+    soft_line* beginning_line__RO_notnull;
+} RenderData;
+char_list_notnull str_to_char_list(char* str__notnull) {
     if (str__notnull[0] == '\0') {
         fprintf(stderr, "Empty str in str_to_Char\n");
         exit(1);
     }
-    Char* current = die_if_null__notnull(malloc(sizeof(Char)));
+    char_list* current = checked_malloc_type(char_list);
     current->prev__nullable = NULL;
     current->content = str__notnull[0];
     current->next__nullable = NULL;
-    Char* first = current;
+    char_list* first = current;
     while (1) {
         ++str__notnull;
         if (*str__notnull == '\0') break;
-        Char* new = die_if_null__notnull(malloc(sizeof(Char)));
+        char_list* new = checked_malloc_type(char_list);
         new->prev__nullable = current;
         new->content = *str__notnull;
         new->next__nullable = current->next__nullable;
         current->next__nullable = new;
         current = new;
     }
-    return first;
+    return make_char_list_notnull(first);
 }
 uint min(uint a, uint b) {
     return a < b ? a : b;
@@ -60,7 +66,10 @@ uint min(uint a, uint b) {
 uint subtract_saturating(uint minuend, uint subtrahend) {
     return minuend - min(minuend, subtrahend);
 }
-SoftLine SoftLine_make(Char* char__notnull, uint_notnull width_limit) {
+soft_line get_next_soft_line__nullable(soft_list* s__notnull) {
+
+}
+soft_line get_soft_line(char_list* c__notnull, uint_notnull width_limit) {
     uint index_in_hard_line = 0;
     Char_iter_prev(char__notnull, prev__notnull) {
         if (prev__notnull->content == '\n') break;
