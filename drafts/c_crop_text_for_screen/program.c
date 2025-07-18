@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#define Char_loop_prev(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->prev__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->prev__nullable)
-#define Char_loop_next(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->next__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
+#define Char_iter(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
+#define Char_iter_prev(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->prev__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->prev__nullable)
+#define Char_iter_next(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->next__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
 #define repeat(count) for (uint i = 0; i < count; ++i)
 typedef unsigned int uint;
 typedef uint uint_notnull;
@@ -61,7 +62,7 @@ uint subtract_saturating(uint minuend, uint subtrahend) {
 }
 SoftLine SoftLine_make(Char* char__notnull, uint_notnull width_limit) {
     uint index_in_hard_line = 0;
-    Char_loop_prev(char__notnull, prev__notnull) {
+    Char_iter_prev(char__notnull, prev__notnull) {
         if (prev__notnull->content == '\n') break;
         ++index_in_hard_line;
     }
@@ -75,38 +76,47 @@ SoftLine SoftLine_make(Char* char__notnull, uint_notnull width_limit) {
         .beginning_char__RO_notnull = beginning_char__notnull,
     };
 }
-OptionalSoftLine SoftLine_try_get_next(SoftLine* soft_line__notnull) {
+Char* SoftLine_try_get_next__nullable_private(SoftLine* soft_line__notnull) {
     Char* beginning__not_null = soft_line__notnull->beginning_char__RO_notnull;
-    bool exists = true;
     repeat(soft_line__notnull->width_limit__RO) {
         if (beginning__not_null->next__nullable == NULL) {
-            exists = false;
-            break;
+            return NULL;
         } else {
             bool newline_found = beginning__not_null->content == '\n';
-            beginning__not_null = beginning__not_null->next__nullable;
+            beginning__not_null = die_if_null__notnull(beginning__not_null->next__nullable);
             if (newline_found) {
                 break;
             }
         }
     }
-    return (OptionalSoftLine) {
-        .exists__RO = exists,
-        .soft_line__RO = (SoftLine) {
-            .beginning_char__RO_notnull = beginning__not_null,
-            .width_limit__RO = soft_line__notnull->width_limit__RO,
-        },
-    };
+    return beginning__not_null;
 }
-OptionalSoftLine SoftLine_try_get_prev(SoftLine* soft_line__notnull) {
-    if (soft_line__notnull->beginning_char__RO_notnull->prev__nullable == NULL) {
+OptionalSoftLine SoftLine_try_get_next(SoftLine* soft_line__notnull) {
+    Char* next__nullable = SoftLine_try_get_next__nullable_private(soft_line__notnull);
+    if (next__nullable == NULL) {
         return (OptionalSoftLine) {
             .exists__RO = false,
         };
     } else {
         return (OptionalSoftLine) {
             .exists__RO = true,
-            .soft_line__RO = SoftLine_make(soft_line__notnull->beginning_char__RO_notnull->prev__nullable, soft_line__notnull->width_limit__RO),
+            .soft_line__RO = (SoftLine) {
+                .width_limit__RO = soft_line__notnull->width_limit__RO,
+                .beginning_char__RO_notnull = die_if_null__notnull(next__nullable),
+            },
+        };
+    }
+}
+OptionalSoftLine SoftLine_try_get_prev(SoftLine* soft_line__notnull) {
+    Char* prev__nullable = soft_line__notnull->beginning_char__RO_notnull->prev__nullable;
+    if (prev__nullable == NULL) {
+        return (OptionalSoftLine) {
+            .exists__RO = false,
+        };
+    } else {
+        return (OptionalSoftLine) {
+            .exists__RO = true,
+            .soft_line__RO = SoftLine_make(die_if_null__notnull(prev__nullable), soft_line__notnull->width_limit__RO),
         };
     }
 }
@@ -142,34 +152,30 @@ RenderData RenderData_make(uint_notnull width_limit, uint_notnull height_limit, 
         .selected_char__RO_notnull = selected_char__notnull,
     };
 }
-void render(RenderData* render_data__notnull, WidthLimit width_limit, HeightLimit height_limit) {
-    HeightIndex height_index = 0;
-    WidthIndex width_index = 0;
-    Char_loop_next(render_data__notnull->beginning_line__RO.beginning_char__RO_notnull, next__notnull) {
-        if (height_index < height_limit) {
+void SoftLine_render(SoftLine* line__notnull) {
+    Char* end = SoftLine_try_get_next__nullable_private(line__notnull);
+    Char_iter(line__notnull->beginning_char__RO_notnull, next) {
+        if (next == end) break;
+        printf("%c", next->content == '\n' ? ' ' : next->content);
+    }
+    printf("\n");
+}
+void render(RenderData* render_data__notnull, uint_notnull height_limit) {
+    SoftLine line = render_data__notnull->beginning_line__RO;
+    repeat(height_limit) {
+        SoftLine_render(&line);
+        OptionalSoftLine next = SoftLine_try_get_next(&line);
+        if (next.exists__RO) {
+            line = next.soft_line__RO;
+        } else {
             break;
-        }
-        bool reset = false;
-        if (next__notnull->content == '\n') {
-            printf(" ");
-            reset = true;
-        }
-        printf("%c", next__notnull->content);
-        if (width_index == width_limit) {
-            printf("\n");
-            reset = true;
-        }
-        ++width_index;
-        if (reset) {
-            width_index = 0;
-            ++height_index;
         }
     }
 }
 int main(void) {
-    Char* selected_char__notnull = str_to_Char("Sa\n\n\nb\n\ncdefghi\n\n\n\nE");
+    Char* selected_char__notnull = str_to_Char__notnull("Sa\n\n\nb\n\ncdefghi\n\n\n\nE");
     printf("Input:\n");
-    Char_loop_next(selected_char__notnull, next__notnull) {
+    Char_iter_next(selected_char__notnull, next__notnull) {
         printf("%c", next__notnull->content);
     }
     printf("\n");
@@ -182,10 +188,6 @@ int main(void) {
         printf("Shift %u:\n", shift);
         ++shift;
         RenderData render_data = RenderData_make(width_limit, height_limit, selected_char__notnull);
-        Char_loop_next(render_data.beginning_line__RO.beginning_char__RO_notnull, next__notnull) {
-            printf("%c", next__notnull->content);
-        }
-        printf("\n");
         selected_char__nullable = selected_char__notnull->next__nullable;
     }
     // render(&render_data, width_limit, height_limit);
