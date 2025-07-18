@@ -1,42 +1,26 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#define Char_iter(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
-#define Char_iter_prev(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->prev__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->prev__nullable)
-#define Char_iter_next(producer__notnull, receiver__nullable) for (Char* receiver__nullable = producer__notnull->next__nullable; receiver__nullable != NULL; receiver__nullable = receiver__nullable->next__nullable)
-#define repeat(count) for (uint i = 0; i < count; ++i)
-#define wrap(old_type, wrapper_type) typedef struct { old_type _content; } wrapper_type; wrapper_type make_##wrapper_type(old_type content)
-#define read(wrapper_type) wrapper_type._content
-#define die(msg) { fprintf(stderr, "death at file %s, line %u: %s", __FILE__, __LINE__, msg); exit(EXIT_FAILURE); }
-#define wrap_ptr_notnull(old_type, wrapper_type) wrap(old_type, wrapper_type) { if (content == NULL) die("== NULL") return (wrapper_type) { ._content = content }; }
-#define wrap_identity(old_type, wrapper_type) wrap(old_type, wrapper_type) { return (wrapper_type) { ._content = content }; }
-#define malloc_checked_type(type) make_##type(malloc(sizeof(type)))
 
 typedef unsigned int uint;
-wrap(uint, uint_notnull) {
-    if (content == 0) die("== 0")
-    return (uint_notnull) {
-        ._content = content,
-    };
-}
+typedef struct { uint v; } uint_notnull;
 
 typedef struct char_list {
     struct char_list* prev;
     char content;
     struct char_list* next;
 } char_list;
-wrap_ptr_notnull(char_list*, char_list_notnull)
-wrap_identity(char_list, soft_line)
-wrap_ptr_notnull(soft_line*, soft_line_notnull)
+typedef struct { char_list* v; } char_list_p_notnull;
+typedef struct { char_list v; } soft_line;
+typedef struct { soft_line* v; } soft_line_p_notnull;
+typedef struct { char* v; } char_p_notnull;
 
-#define _ROstruct_member(type, name) type name;
-#define _ROstruct_members(member_params, ...) _ROstruct_member member_params ROstruct(__VA_ARGS__)
-#define ROstruct(name, ...) typedef struct { _ROstruct_members() } name;
-ROstruct(RenderData, (char_list_notnull, _selected_char), (soft_line_notnull, _beginning_line))
-soft_line_notnull beginning_line(RenderData r) {
-    return r._beginning_line;
+void* not_null(void* ptr) {
+    if (ptr == NULL) exit(EXIT_FAILURE);
+    return ptr;
 }
-char_list_notnull str_to_char_list(char* str__notnull) {
+
+char_list_notnull str_to_char_list(char_notnull str) {
     if (str__notnull[0] == '\0') {
         fprintf(stderr, "Empty str in str_to_Char\n");
         exit(1);
