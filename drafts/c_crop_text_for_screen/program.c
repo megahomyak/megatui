@@ -112,7 +112,7 @@ void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, ui
 }
 int main(void) {
     char_list* input_nullable = str_to_char_list_notnull("Sa\n\n\nb\n\ncdefghi\n\n\n\nE");
-    const uint width_limit_notzero = 4;
+    const uint width_limit_notzero = 6;
     const uint height_limit_notzero = 4;
     uint shift = 0;
     while (input_nullable != 0) {
