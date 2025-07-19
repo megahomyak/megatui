@@ -2,54 +2,40 @@
 #include <stdbool.h>
 #include <stdio.h>
 typedef unsigned int uint;
-typedef struct { uint notnull; } uint_notnull;
-void check_notnull(void* ptr) {
-    if (ptr == NULL) {
-        fprintf(stderr, "Empty ptr\n");
-        exit(EXIT_FAILURE);
-    }
-}
 typedef struct char_list {
-    struct char_list* prev;
+    struct char_list* prev_nullable;
     char content;
-    struct char_list* next;
+    struct char_list* next_nullable;
 } char_list;
-typedef struct { char_list* notnull; } char_list_notnullp;
-char_list_notnullp char_list_notnull(char_list* char_list) {
-    check_notnull(char_list);
-    return (char_list_notnullp) { char_list };
-}
-typedef struct { char_list* nullable; } soft_line_nullablep;
-typedef struct { char_list_notnullp notnull; } soft_line_notnullp;
-
-typedef struct { char* notnull; } char_notnullp;
-
 void* malloc_notnull(size_t size) {
     void* ptr = malloc(size);
-    check_notnull(ptr);
-    return ptr;
-}
-char_list_notnullp str_to_char_list(char_notnullp str) {
-    if (str.notnull[0] == '\0') {
-        fprintf(stderr, "Empty str\n");
+    if (ptr == NULL) {
+        fprintf(stderr, "ptr is null\n");
         exit(EXIT_FAILURE);
     }
-    char_list_notnullp current = { malloc_notnull(sizeof(char_list)) };
-    current.notnull->prev = NULL;
-    current.notnull->content = str.notnull[0];
-    current.notnull->next = NULL;
-    char_list_notnullp first = current;
-    while (1) {
-        ++str.notnull;
-        if (*str.notnull == '\0') break;
-        char_list_notnullp new = { malloc_notnull(sizeof(char_list)) };
-        new.notnull->prev = current.notnull;
-        new.notnull->content = *str.notnull;
-        new.notnull->next = current.notnull;
-        current.notnull->next = new.notnull;
-        current = new;
+    return ptr;
+}
+char_list* str_to_char_list_notnull(char* str_notnull) {
+    if (str_notnull[0] == '\0') {
+        fprintf(stderr, "empty str\n");
+        exit(EXIT_FAILURE);
     }
-    return first;
+    char_list* current_notnull = malloc_notnull(sizeof(char_list));
+    current_notnull->prev_nullable = NULL;
+    current_notnull->content = str_notnull[0];
+    current_notnull->next_nullable = NULL;
+    char_list* first_notnull = current_notnull;
+    while (1) {
+        ++str_notnull;
+        if (*str_notnull == '\0') break;
+        char_list* new_notnull = malloc_notnull(sizeof(char_list));
+        new_notnull->prev_nullable = current_notnull;
+        new_notnull->content = *str_notnull;
+        new_notnull->next_nullable = current_notnull->next_nullable;
+        current_notnull->next_nullable = new_notnull;
+        current_notnull = new_notnull;
+    }
+    return first_notnull;
 }
 uint min(uint a, uint b) {
     return a < b ? a : b;
@@ -57,118 +43,82 @@ uint min(uint a, uint b) {
 uint subtract_saturating(uint minuend, uint subtrahend) {
     return minuend - min(minuend, subtrahend);
 }
-soft_line_notnullp get_soft_line(char_list_notnullp current_line, uint_notnull width_limit) {
+char_list* get_soft_line_notnull(char_list* current_char_notnull, uint width_limit_notzero) {
     uint index_in_hard_line = 0;
-    for (char_list* prev_char = current_line.notnull->prev; prev_char != NULL; prev_char = prev_char->prev) {
-        char_list_notnullp prev_notnull = { notnull(prev_char) };
-        if (prev_notnull.notnull->content == '\n') break;
+    for (char_list* prev_char_nullable = current_char_notnull->prev_nullable; prev_char_nullable != NULL; prev_char_nullable = prev_char_nullable->prev_nullable) {
+        if (prev_char_nullable->content == '\n') break;
         ++index_in_hard_line;
     }
-    uint width_index = index_in_hard_line % width_limit.notnull;
-    char_list_notnullp beginning_char = current_line;
+    uint width_index = index_in_hard_line % width_limit_notzero;
+    char_list* beginning_char_notnull = current_char_notnull;
     for (uint i = 0; i < width_index; ++i) {
-        beginning_char = (char_list_notnullp) { notnull(beginning_char.notnull->prev) };
+        beginning_char_notnull = beginning_char_notnull->prev_nullable;
     }
-    return (soft_line_notnullp) { beginning_char };
+    return beginning_char_notnull;
 }
-soft_line_nullablep get_next_soft_line(soft_line_notnullp current_line, uint_notnull width_limit) {
-    char_list_notnullp beginning = current_line.notnull;
-    for (uint i = 0; i < width_limit.notnull; ++i) {
-        if (beginning.notnull->next == NULL) return (soft_line_nullablep) { NULL };
+char_list* get_next_soft_line_nullable(char_list* current_soft_line_notnull, uint width_limit_notzero) {
+    char_list* beginning_char_notnull = current_soft_line_notnull;
+    for (uint i = 0; i < width_limit_notzero; ++i) {
+        if (beginning_char_notnull->next_nullable == NULL) return NULL;
         else {
-            bool newline_found = beginning.notnull->content == '\n';
-            beginning = (char_list_notnullp){ notnull(beginning.notnull->next) };
+            bool newline_found = beginning_char_notnull->content == '\n';
+            beginning_char_notnull = beginning_char_notnull->next_nullable;
             if (newline_found) break;
         }
     }
-    return (soft_line_nullablep) { beginning.notnull };
+    return beginning_char_notnull;
 }
-soft_line_nullablep get_prev_soft_line(soft_line_notnullp current_line, uint_notnull width_limit) {
-    char_list* prev = current_line.notnull.notnull->prev;
-    if (prev == NULL) return (soft_line_nullablep) { NULL };
-    else return (soft_line_nullablep) { get_soft_line((char_list_notnullp) { notnull(prev) }, width_limit).notnull.notnull };
+char_list* get_prev_soft_line_nullable(char_list* current_soft_line_notnull, uint width_limit_notzero) {
+    char_list* prev_char_nullable = current_soft_line_notnull->prev_nullable;
+    if (prev_char_nullable == NULL) return NULL;
+    else return get_soft_line_notnull(prev_char_nullable, width_limit_notzero);
 }
-soft_line_notnullp find_render_beginning(soft_line_notnullp current_line, uint_notnull height_limit, uint_notnull width_limit) {
-    const uint current_lines = 1;
-    uint after_lines = 0;
-    soft_line_notnullp after_line = current_line;
-    while (after_lines + current_lines < height_limit.notnull) {
-        soft_line_nullablep after_line_nullable = get_next_soft_line(current_line, width_limit);
-        if (after_line_nullable.nullable == NULL) break;
+char_list* find_render_beginning_soft_line_notnull(char_list* current_soft_line_notnull, uint width_limit_notzero, uint height_limit_notzero) {
+    const uint current_soft_lines = 1;
+    uint after_soft_lines = 0;
+    char_list* after_soft_line_nullable = current_soft_line_notnull;
+    while (after_soft_lines + current_soft_lines < height_limit_notzero) {
+        after_soft_line_nullable = get_next_soft_line_nullable(after_soft_line_nullable, width_limit_notzero);
+        if (after_soft_line_nullable == NULL) break;
+        else ++after_soft_lines;
+    }
+    uint max_before_soft_lines = subtract_saturating(height_limit_notzero, current_soft_lines + min(after_soft_lines, height_limit_notzero / 2));
+    uint before_soft_lines = 0;
+    char_list* before_soft_line_notnull = current_soft_line_notnull;
+    while (before_soft_lines < max_before_soft_lines) {
+        char_list* before_soft_line_nullable = get_prev_soft_line_nullable(before_soft_line_notnull, width_limit_notzero);
+        if (before_soft_line_nullable == NULL) break;
         else {
-            after_line = (soft_line_notnullp) { notnull(after_line_nullable.nullable) };
+            ++before_soft_lines;
+            before_soft_line_notnull = before_soft_line_nullable;
         }
     }
+    return before_soft_line_notnull;
 }
-RenderData RenderData_make(uint_notnull width_limit, uint_notnull height_limit, Char* selected_char__notnull) {
-    SoftLine selected_line = SoftLine_make(selected_char__notnull, width_limit);
-    const uint lines_selected = 1;
-    uint lines_after = 0;
-    SoftLine line_after = selected_line;
-    while (lines_after + lines_selected < height_limit) {
-        OptionalSoftLine optional_line_after = SoftLine_try_get_next(&line_after);
-        if (optional_line_after.exists__RO) {
-            ++lines_after;
-            line_after = optional_line_after.soft_line__RO;
-        } else {
-            break;
+void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, uint height_limit_notzero) {
+    char_list* beginning_soft_line_nullable = beginning_soft_line_notnull;
+    for (uint i = 0;;) {
+        char_list* current_char_nullable = beginning_soft_line_nullable;
+        beginning_soft_line_nullable = get_next_soft_line_nullable(beginning_soft_line_nullable, width_limit_notzero);
+        for (; current_char_nullable != beginning_soft_line_nullable; current_char_nullable = current_char_nullable->next_nullable) {
+            char content = current_char_nullable->content;
+            printf("%c", content == '\n' ? ' ' : content);
         }
-    }
-    uint max_lines_before = subtract_saturating(height_limit, lines_selected + min(lines_after, height_limit / 2));
-    uint lines_before = 0;
-    SoftLine line_before = selected_line;
-    while (lines_before < max_lines_before) {
-        OptionalSoftLine optional_line_before = SoftLine_try_get_prev(&line_before);
-        if (optional_line_before.exists__RO) {
-            line_before = optional_line_before.soft_line__RO;
-            ++lines_before;
-        } else {
-            break;
-        }
-    }
-    SoftLine beginning_line = line_before;
-    return (RenderData) {
-        .beginning_line__RO = beginning_line,
-        .selected_char__RO_notnull = selected_char__notnull,
-    };
-}
-void SoftLine_render(SoftLine* line__notnull) {
-    Char* end = SoftLine_try_get_next__nullable_private(line__notnull);
-    Char_iter(line__notnull->beginning_char__RO_notnull, next) {
-        if (next == end) break;
-        printf("%c", next->content == '\n' ? ' ' : next->content);
+        ++i;
+        if (beginning_soft_line_nullable == NULL || i == height_limit_notzero) break;
+        printf("\n");
     }
     printf("\n");
-}
-void render(RenderData* render_data__notnull, uint_notnull height_limit) {
-    SoftLine line = render_data__notnull->beginning_line__RO;
-    repeat(height_limit) {
-        SoftLine_render(&line);
-        OptionalSoftLine next = SoftLine_try_get_next(&line);
-        if (next.exists__RO) {
-            line = next.soft_line__RO;
-        } else {
-            break;
-        }
-    }
 }
 int main(void) {
-    Char* selected_char__notnull = str_to_Char__notnull("Sa\n\n\nb\n\ncdefghi\n\n\n\nE");
-    printf("Input:\n");
-    Char_iter_next(selected_char__notnull, next__notnull) {
-        printf("%c", next__notnull->content);
-    }
-    printf("\n");
-    const uint_notnull width_limit = 4;
-    const uint_notnull height_limit = 4;
+    char_list* input_nullable = str_to_char_list_notnull("Sa\n\n\nb\n\ncdefghi\n\n\n\nE");
+    const uint width_limit_notzero = 4;
+    const uint height_limit_notzero = 4;
     uint shift = 0;
-    Char* selected_char__nullable = selected_char__notnull;
-    while (selected_char__nullable != NULL) {
-        Char* selected_char__notnull = die_if_null__notnull(selected_char__nullable);
+    while (input_nullable != 0) {
         printf("Shift %u:\n", shift);
         ++shift;
-        RenderData render_data = RenderData_make(width_limit, height_limit, selected_char__notnull);
-        selected_char__nullable = selected_char__notnull->next__nullable;
+        render(find_render_beginning_soft_line_notnull(input_nullable, width_limit_notzero, height_limit_notzero), width_limit_notzero, height_limit_notzero);
+        input_nullable = input_nullable->next_nullable;
     }
-    // render(&render_data, width_limit, height_limit);
 }
