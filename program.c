@@ -72,16 +72,23 @@ char_list* roll_to_beginning_notnull(char_list* char_list_notnull) {
     while (char_list_notnull->prev_nullable != NULL) char_list_notnull = char_list_notnull->prev_nullable;
     return char_list_notnull;
 }
-char_list* find_next_edit_sequence_nullable(char_list* char_list_notnull) {
-    while (1) {
-        if (char_list_notnull->type == EDIT) return char_list_notnull;
-        if (char_list_notnull->next_nullable == NULL) return NULL;
-        else char_list_notnull = char_list_notnull->next_nullable;
+char_list* find_next_edit_sequence_nullable(char_list* char_list_nullable) {
+    while (char_list_nullable != NULL) {
+        if (char_list_nullable->type == EDIT) return char_list_nullable;
+        char_list_nullable = char_list_nullable->next_nullable;
     }
+    return NULL;
 }
-char_list* find_next_edit_char_nullable(char_list* char_list_notnull) {
-    if (char_list_notnull->next_nullable == NULL || char_list_notnull->next_nullable->type != EDIT) return NULL;
-    return char_list_notnull->next_nullable;
+char_list* move_to_next_edit_char_nullable(char_list** char_list_nullable_notnull) {
+    char_list* char_list_nullable = *char_list_nullable_notnull;
+    if (char_list_nullable != NULL && char_list_nullable->type == EDIT) {
+        char_list* next_nullable = char_list_nullable->next_nullable;
+        *char_list_nullable_notnull = next_nullable;
+        if (next_nullable != NULL && next_nullable->type == EDIT) {
+            return char_list_nullable;
+        }
+    }
+    return NULL;
 }
 uint min(uint a, uint b) {
     return a < b ? a : b;
@@ -124,7 +131,7 @@ char_list* find_render_beginning_soft_line_notnull(char_list* current_soft_line_
     const uint current_soft_lines = 1;
     uint after_soft_lines = 0;
     char_list* after_soft_line_notnull = current_soft_line_notnull;
-    while (after_soft_lines + current_soft_lines < height_limit_notzero) {
+    while (after_soft_lines + current_soft_lines <= height_limit_notzero) {
         char_list* after_soft_line_nullable = get_next_soft_line_nullable(after_soft_line_notnull, width_limit_notzero);
         if (after_soft_line_nullable == NULL) break;
         after_soft_line_notnull = after_soft_line_nullable;
@@ -145,9 +152,10 @@ void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, ui
     clear();
     char_list* beginning_soft_line_nullable = beginning_soft_line_notnull;
     int cursor_x, cursor_y;
-    for (uint i = 0;;) {
+    for (uint current_y = 0;;) {
         char_list* current_char_nullable = beginning_soft_line_nullable;
         beginning_soft_line_nullable = get_next_soft_line_nullable(beginning_soft_line_nullable, width_limit_notzero);
+        uint current_x = 0;
         for (; current_char_nullable != beginning_soft_line_nullable; current_char_nullable = current_char_nullable->next_nullable) {
             if (current_char_nullable == current_char_notnull) {
                 cursor_x = getcurx(stdscr);
@@ -156,12 +164,12 @@ void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, ui
             char content = current_char_nullable->content;
             int color_pair_id = current_char_nullable->type;
             if (color_pair_id != 0) attron(COLOR_PAIR(color_pair_id));
-            printw("%c", content == '\n' ? ' ' : content);
+            mvprintw(current_y, current_x, "%c", content == '\n' ? ' ' : content);
+            ++current_x;
             if (color_pair_id != 0) attroff(COLOR_PAIR(color_pair_id));
         }
-        ++i;
-        if (beginning_soft_line_nullable == NULL || i == height_limit_notzero) break;
-        printw("\n");
+        ++current_y;
+        if (beginning_soft_line_nullable == NULL || current_y == height_limit_notzero) break;
     }
     move(cursor_y, cursor_x);
     refresh();
@@ -174,17 +182,19 @@ char_list* wait_for_button_activation_and_return_the_destination_notnull(char_li
     noecho();
     keypad(stdscr, TRUE);
     init_pair(EDIT, COLOR_BLACK, COLOR_YELLOW);
-    init_pair(BUTTON, COLOR_WHITE, COLOR_BLUE);
+    init_pair(BUTTON, COLOR_BLACK, COLOR_BLUE);
     while (1) {
-        uint width_limit_notzero = getmaxx(stdscr) + 1;
-        uint height_limit_notzero = getmaxy(stdscr) + 1;
-        render(get_soft_line_notnull(current_char_notnull, width_limit_notzero), width_limit_notzero, height_limit_notzero, current_char_notnull);
+        uint width_limit_notzero = getmaxx(stdscr);
+        uint height_limit_notzero = getmaxy(stdscr);
+        render(find_render_beginning_soft_line_notnull(get_soft_line_notnull(current_char_notnull, width_limit_notzero), width_limit_notzero, height_limit_notzero), width_limit_notzero, height_limit_notzero, current_char_notnull);
         int key = getch();
         if (key != KEY_RESIZE) {
             if (key == KEY_LEFT) {
                 if (current_char_notnull->prev_nullable != NULL) current_char_notnull = current_char_notnull->prev_nullable;
             } else if (key == KEY_RIGHT) {
                 if (current_char_notnull->next_nullable != NULL) current_char_notnull = current_char_notnull->next_nullable;
+            } else if (key == KEY_UP) {
+            } else if (key == KEY_DOWN) {
             } else {
                 if (current_char_notnull->type == BUTTON) {
                     if (key == '\n') break;
@@ -213,40 +223,32 @@ enum {
 };
 int main(void) {
     char_list* input_notnull = extend_char_list_notnull(NULL, "Static text\n", STATIC, 0);
-    input_notnull = extend_char_list_notnull(input_notnull, "Edit sequence 1: ", STATIC, 0);
-    input_notnull = extend_char_list_notnull(input_notnull, "default value ", EDIT, 0);
-    input_notnull = extend_char_list_notnull(input_notnull, "\n", STATIC, 0);
-    input_notnull = extend_char_list_notnull(input_notnull, "Edit sequence 2: ", STATIC, 0);
-    input_notnull = extend_char_list_notnull(input_notnull, " ", EDIT, 0);
-    input_notnull = extend_char_list_notnull(input_notnull, "\n", STATIC, 0);
-    input_notnull = extend_char_list_notnull(input_notnull, "\n", STATIC, 0);
     input_notnull = extend_char_list_notnull(input_notnull, "Exit without sequence printing", BUTTON, EXIT_WITHOUT_EDIT_SEQUENCE_PRINTING);
     input_notnull = extend_char_list_notnull(input_notnull, " ", STATIC, 0);
     input_notnull = extend_char_list_notnull(input_notnull, "Exit with sequence printing", BUTTON, EXIT_WITH_EDIT_SEQUENCE_PRINTING);
+    input_notnull = extend_char_list_notnull(input_notnull, "\n\n", STATIC, 0);
+    input_notnull = extend_char_list_notnull(input_notnull, "Edit sequence 1: ", STATIC, 0);
+    input_notnull = extend_char_list_notnull(input_notnull, "default value\n", EDIT, 0);
+    input_notnull = extend_char_list_notnull(input_notnull, "Edit sequence 2: ", STATIC, 0);
+    input_notnull = extend_char_list_notnull(input_notnull, " ", EDIT, 0);
     input_notnull = wait_for_button_activation_and_return_the_destination_notnull(roll_to_beginning_notnull(input_notnull));
     if (input_notnull->button_index == EXIT_WITHOUT_EDIT_SEQUENCE_PRINTING) {
         printf("Exiting without edit sequence printing\n");
     } else if (input_notnull->button_index == EXIT_WITH_EDIT_SEQUENCE_PRINTING) {
         input_notnull = roll_to_beginning_notnull(input_notnull);
         uint edit_sequence_number = 1;
+        char_list* edit_sequence_nullable = input_notnull;
         while (1) {
-            char_list* edit_sequence = find_next_edit_sequence_nullable(input_notnull);
-            if (edit_sequence == NULL) break;
-            printf("Edit sequence %d: ", edit_sequence_number);
+            edit_sequence_nullable = find_next_edit_sequence_nullable(edit_sequence_nullable);
+            if (edit_sequence_nullable == NULL) break;
+            printf("Edit sequence %d: [", edit_sequence_number);
             ++edit_sequence_number;
             while (1) {
-                printf("%c", edit_sequence->content);
-                if (edit_sequence->next_nullable == NULL) break;
-                if (edit_sequence->type == EDIT) {
-
-                }
-                char_list* edit_char = find_next_edit_char_nullable(edit_sequence);
-                if (edit_char == NULL) {
-                    break;
-                }
-                edit_sequence = edit_char;
+                char_list* edit_char_nullable = move_to_next_edit_char_nullable(&edit_sequence_nullable);
+                if (edit_char_nullable == NULL) break;
+                printf("%c", edit_char_nullable->content);
             }
-            printf("\n");
+            printf("]\n");
         }
     }
 }
