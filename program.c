@@ -148,6 +148,17 @@ char_list* find_render_beginning_soft_line_notnull(char_list* current_soft_line_
     }
     return before_soft_line_notnull;
 }
+void render_char(char_list* current_notnull, uint* current_x, uint* current_y) {
+    char content = current_notnull->content;
+    int color_pair_id = current_notnull->type;
+    if (color_pair_id != 0) attron(COLOR_PAIR(color_pair_id));
+    mvprintw(*current_y, *current_x, "%c", content == '\n' ? ' ' : content);
+    ++*(current_x);
+    if (content == '\n') {
+        ++current_y;
+    }
+    if (color_pair_id != 0) attroff(COLOR_PAIR(color_pair_id));
+}
 void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, uint height_limit_notzero, char_list* current_char_notnull) {
     clear();
     char_list* beginning_soft_line_nullable = beginning_soft_line_notnull;
@@ -161,12 +172,7 @@ void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, ui
                 cursor_x = getcurx(stdscr);
                 cursor_y = getcury(stdscr);
             }
-            char content = current_char_nullable->content;
-            int color_pair_id = current_char_nullable->type;
-            if (color_pair_id != 0) attron(COLOR_PAIR(color_pair_id));
-            mvprintw(current_y, current_x, "%c", content == '\n' ? ' ' : content);
-            ++current_x;
-            if (color_pair_id != 0) attroff(COLOR_PAIR(color_pair_id));
+            render_char(current_char_notnull, )
         }
         ++current_y;
         if (beginning_soft_line_nullable == NULL || current_y == height_limit_notzero) break;
