@@ -235,10 +235,12 @@ char_list* wait_for_button_activation_and_return_the_destination_notnull(char_li
                             char_list* prev_nullable = current_char_notnull->prev_nullable;
                             if (prev_nullable->prev_nullable != NULL) prev_nullable->prev_nullable->next_nullable = current_char_notnull;
                             current_char_notnull->prev_nullable = prev_nullable->prev_nullable;
+                            cursor_target_x_set = false;
                             free(prev_nullable);
                         }
                     } else {
                         push_char_before_notnull(current_char_notnull, key, EDIT, 0);
+                        cursor_target_x_set = false;
                     }
                 }
             }
