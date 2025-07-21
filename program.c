@@ -148,18 +148,7 @@ char_list* find_render_beginning_soft_line_notnull(char_list* current_soft_line_
     }
     return before_soft_line_notnull;
 }
-void render_char(char_list* current_notnull, uint* current_x, uint* current_y) {
-    char content = current_notnull->content;
-    int color_pair_id = current_notnull->type;
-    if (color_pair_id != 0) attron(COLOR_PAIR(color_pair_id));
-    mvprintw(*current_y, *current_x, "%c", content == '\n' ? ' ' : content);
-    ++*(current_x);
-    if (content == '\n') {
-        ++current_y;
-    }
-    if (color_pair_id != 0) attroff(COLOR_PAIR(color_pair_id));
-}
-void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, uint height_limit_notzero, char_list* current_char_notnull) {
+uint render_and_return_cursor_x(char_list* beginning_soft_line_notnull, uint width_limit_notzero, uint height_limit_notzero, char_list* current_char_notnull) {
     clear();
     char_list* beginning_soft_line_nullable = beginning_soft_line_notnull;
     int cursor_x, cursor_y;
@@ -169,16 +158,22 @@ void render(char_list* beginning_soft_line_notnull, uint width_limit_notzero, ui
         uint current_x = 0;
         for (; current_char_nullable != beginning_soft_line_nullable; current_char_nullable = current_char_nullable->next_nullable) {
             if (current_char_nullable == current_char_notnull) {
-                cursor_x = getcurx(stdscr);
-                cursor_y = getcury(stdscr);
+                cursor_x = current_x;
+                cursor_y = current_y;
             }
-            render_char(current_char_notnull, )
+            char content = current_char_nullable->content;
+            int color_pair_id = current_char_nullable->type;
+            if (color_pair_id != 0) attron(COLOR_PAIR(color_pair_id));
+            mvprintw(current_y, current_x, "%c", content == '\n' ? ' ' : content);
+            if (color_pair_id != 0) attroff(COLOR_PAIR(color_pair_id));
+            ++current_x;
         }
         ++current_y;
         if (beginning_soft_line_nullable == NULL || current_y == height_limit_notzero) break;
     }
     move(cursor_y, cursor_x);
     refresh();
+    return cursor_x;
 }
 /* UI */
 char_list* wait_for_button_activation_and_return_the_destination_notnull(char_list* current_char_notnull) {
@@ -189,18 +184,48 @@ char_list* wait_for_button_activation_and_return_the_destination_notnull(char_li
     keypad(stdscr, TRUE);
     init_pair(EDIT, COLOR_BLACK, COLOR_YELLOW);
     init_pair(BUTTON, COLOR_BLACK, COLOR_BLUE);
+    bool cursor_target_x_set = false;
+    uint cursor_target_x;
     while (1) {
         uint width_limit_notzero = getmaxx(stdscr);
         uint height_limit_notzero = getmaxy(stdscr);
-        render(find_render_beginning_soft_line_notnull(get_soft_line_notnull(current_char_notnull, width_limit_notzero), width_limit_notzero, height_limit_notzero), width_limit_notzero, height_limit_notzero, current_char_notnull);
+        char_list* current_soft_line_notnull = get_soft_line_notnull(current_char_notnull, width_limit_notzero);
+        uint cursor_x = render_and_return_cursor_x(find_render_beginning_soft_line_notnull(current_soft_line_notnull, width_limit_notzero, height_limit_notzero), width_limit_notzero, height_limit_notzero, current_char_notnull);
+        if (!cursor_target_x_set) {
+            cursor_target_x = cursor_x;
+            cursor_target_x_set = true;
+        }
         int key = getch();
         if (key != KEY_RESIZE) {
             if (key == KEY_LEFT) {
-                if (current_char_notnull->prev_nullable != NULL) current_char_notnull = current_char_notnull->prev_nullable;
+                if (current_char_notnull->prev_nullable != NULL) {
+                    current_char_notnull = current_char_notnull->prev_nullable;
+                    cursor_target_x_set = false;
+                }
             } else if (key == KEY_RIGHT) {
-                if (current_char_notnull->next_nullable != NULL) current_char_notnull = current_char_notnull->next_nullable;
+                if (current_char_notnull->next_nullable != NULL) {
+                    current_char_notnull = current_char_notnull->next_nullable;
+                    cursor_target_x_set = false;
+                }
             } else if (key == KEY_UP) {
+                char_list* prev_soft_line_nullable = get_prev_soft_line_nullable(current_soft_line_notnull, width_limit_notzero);
+                if (prev_soft_line_nullable != NULL) {
+                    current_char_notnull = prev_soft_line_nullable;
+                    for (uint i = 0; i < cursor_target_x; ++i) {
+                        if (current_char_notnull->next_nullable == current_soft_line_notnull) break;
+                        current_char_notnull = current_char_notnull->next_nullable;
+                    }
+                }
             } else if (key == KEY_DOWN) {
+                char_list* next_soft_line_nullable = get_next_soft_line_nullable(current_soft_line_notnull, width_limit_notzero);
+                if (next_soft_line_nullable != NULL) {
+                    current_char_notnull = next_soft_line_nullable;
+                    char_list* next_next_soft_line_nullable = get_next_soft_line_nullable(next_soft_line_nullable, width_limit_notzero);
+                    for (uint i = 0; i < cursor_target_x; ++i) {
+                        if (current_char_notnull->next_nullable == next_next_soft_line_nullable) break;
+                        current_char_notnull = current_char_notnull->next_nullable;
+                    }
+                }
             } else {
                 if (current_char_notnull->type == BUTTON) {
                     if (key == '\n') break;
@@ -228,7 +253,7 @@ enum {
     EXIT_WITH_EDIT_SEQUENCE_PRINTING,
 };
 int main(void) {
-    char_list* input_notnull = extend_char_list_notnull(NULL, "Static text\n", STATIC, 0);
+    char_list* input_notnull = extend_char_list_notnull(NULL, "Move around with arrow keys, enter or erase or divide text with newlines in yellow edit sequences and press buttons with Enter.\n", STATIC, 0);
     input_notnull = extend_char_list_notnull(input_notnull, "Exit without sequence printing", BUTTON, EXIT_WITHOUT_EDIT_SEQUENCE_PRINTING);
     input_notnull = extend_char_list_notnull(input_notnull, " ", STATIC, 0);
     input_notnull = extend_char_list_notnull(input_notnull, "Exit with sequence printing", BUTTON, EXIT_WITH_EDIT_SEQUENCE_PRINTING);
