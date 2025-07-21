@@ -150,28 +150,12 @@ char_list* find_render_beginning_soft_line_notnull(char_list* current_soft_line_
 }
 uint render_and_return_cursor_x(char_list* beginning_soft_line_notnull, uint width_limit_notzero, uint height_limit_notzero, char_list* current_char_notnull) {
     clear();
-    char_list* current_char_nullable = beginning_soft_line_notnull;
-    int cursor_x, cursor_y;
-    for (uint current_y = 0; current_y < height_limit_notzero; ++current_y) {
-        for (uint current_x = 0; current_x < width_limit_notzero; ++current_x) {
-            if (current_char_notnull == current_char_nullable) {
-                cursor_x = current_x;
-                cursor_y = current_y;
-            }
-            printw("%c", current_char_nullable->content);
-            current_char_nullable = current_char_nullable->next_nullable;
-            if (current_char_nullable == NULL) goto end;
-        }
-    }
-    end:
-    refresh();
-    move(cursor_x, cursor_y);
-    return cursor_x;
+    uint cursor_x, cursor_y;
     for (uint current_y = 0;;) {
-        char_list* current_char_nullable = beginning_soft_line_nullable;
-        beginning_soft_line_nullable = get_next_soft_line_nullable(beginning_soft_line_nullable, width_limit_notzero);
+        char_list* current_char_nullable = beginning_soft_line_notnull;
+        char_list* next_soft_line_nullable = get_next_soft_line_nullable(beginning_soft_line_notnull, width_limit_notzero);
         uint current_x = 0;
-        for (; current_char_nullable != beginning_soft_line_nullable; current_char_nullable = current_char_nullable->next_nullable) {
+        for (; current_char_nullable != next_soft_line_nullable; current_char_nullable = current_char_nullable->next_nullable) {
             if (current_char_nullable == current_char_notnull) {
                 cursor_x = current_x;
                 cursor_y = current_y;
@@ -179,16 +163,14 @@ uint render_and_return_cursor_x(char_list* beginning_soft_line_notnull, uint wid
             char content = current_char_nullable->content;
             int color_pair_id = current_char_nullable->type;
             if (color_pair_id != 0) attron(COLOR_PAIR(color_pair_id));
-            mvinsch(current_y, current_x, content == '\n' ? ' ' : content);
+            mvaddch(current_y, current_x, content == '\n' ? ' ' : content);
             if (color_pair_id != 0) attroff(COLOR_PAIR(color_pair_id));
             ++current_x;
         }
         ++current_y;
-        if (beginning_soft_line_nullable == NULL || current_y == height_limit_notzero) break;
+        if (next_soft_line_nullable == NULL || current_y == height_limit_notzero) break;
+        beginning_soft_line_notnull = next_soft_line_nullable;
     }
-    mvprintw(0, 0, "%d %d %c %d", cursor_y, cursor_x, current_char_notnull->content, current_char_notnull->content);
-    //cursor_x = 12; cursor_y = 15;
-    //cursor_x = 13; cursor_y = 15;
     move(cursor_y, cursor_x);
     refresh();
     return cursor_x;
@@ -196,7 +178,7 @@ uint render_and_return_cursor_x(char_list* beginning_soft_line_notnull, uint wid
 /* UI */
 char_list* wait_for_button_activation_and_return_the_destination_notnull(char_list* current_char_notnull) {
     initscr();
-    //start_color();
+    start_color();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
