@@ -163,6 +163,7 @@ uint render_and_return_cursor_x(char_list* beginning_soft_line_notnull, uint wid
             char content = current_char_nullable->content;
             int color_pair_id = current_char_nullable->type;
             if (color_pair_id != 0) attron(COLOR_PAIR(color_pair_id));
+            //attrset(0);
             mvaddch(current_y, current_x, content == '\n' ? ' ' : content);
             if (color_pair_id != 0) attroff(COLOR_PAIR(color_pair_id));
             ++current_x;
@@ -171,6 +172,7 @@ uint render_and_return_cursor_x(char_list* beginning_soft_line_notnull, uint wid
         if (next_soft_line_nullable == NULL || current_y == height_limit_notzero) break;
         beginning_soft_line_notnull = next_soft_line_nullable;
     }
+    //mvprintw(0, 0, "%d,%d: %c (%d)|", cursor_y, cursor_x, current_char_notnull->content, current_char_notnull->content);
     move(cursor_y, cursor_x);
     refresh();
     return cursor_x;
@@ -178,7 +180,7 @@ uint render_and_return_cursor_x(char_list* beginning_soft_line_notnull, uint wid
 /* UI */
 char_list* wait_for_button_activation_and_return_the_destination_notnull(char_list* current_char_notnull) {
     initscr();
-    start_color();
+    //start_color();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
