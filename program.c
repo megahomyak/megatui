@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <ncurses.h>
 /* utils */
-#define KEY_DEL 127
 typedef enum {
     STATIC = 0,
     EDIT = 1,
