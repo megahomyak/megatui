@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <ncurses.h>
 /* utils */
+#define KEY_DEL 127
 typedef enum {
     STATIC = 0,
     EDIT = 1,
@@ -230,7 +231,7 @@ char_list* wait_for_button_activation_and_return_the_destination_notnull(char_li
                 if (current_char_notnull->type == BUTTON) {
                     if (key == '\n') break;
                 } else if (current_char_notnull->type == EDIT) {
-                    if (key == KEY_BACKSPACE) {
+                    if (key == KEY_BACKSPACE || key == '\b' || key == 127 /* "DEL" */) {
                         if (current_char_notnull->prev_nullable != NULL && current_char_notnull->prev_nullable->type == EDIT) {
                             char_list* prev_nullable = current_char_notnull->prev_nullable;
                             if (prev_nullable->prev_nullable != NULL) prev_nullable->prev_nullable->next_nullable = current_char_notnull;
